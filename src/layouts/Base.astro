@@ -1,0 +1,65 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const {
+  title,
+  description = 'Слушай любимите си български радио станции навсякъде. Безплатно Android приложение.',
+} = Astro.props;
+---
+<!doctype html>
+<html lang="bg">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&display=swap"
+      rel="stylesheet"
+    />
+    <title>{title}</title>
+  </head>
+  <body>
+    <div class="flag-bar"><div class="w"></div><div class="g"></div><div class="r"></div></div>
+
+    <header class="site">
+      <div class="container row">
+        <a class="brand" href="/">
+          <img src="/logo.jpeg" alt="Радио България" />
+          <h1>Радио България</h1>
+        </a>
+        <nav class="site">
+          <a href="/#features">Функции</a>
+          <a href="/#download">Свали</a>
+          <a href="/privacy-policy">Поверителност</a>
+          <a href="/terms">Условия</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <slot />
+    </main>
+
+    <footer class="site">
+      <div class="container row">
+        <div>© 2026 Радио България</div>
+        <div>
+          <a href="/privacy-policy">Политика за поверителност</a>
+          <a href="/terms">Условия за ползване</a>
+          <!-- PLACEHOLDER: replace YOUR_EMAIL@example.com with your real contact email -->
+          <a href="mailto:YOUR_EMAIL@example.com">Контакт</a>
+        </div>
+      </div>
+    </footer>
+
+    <div class="flag-bar"><div class="w"></div><div class="g"></div><div class="r"></div></div>
+  </body>
+</html>

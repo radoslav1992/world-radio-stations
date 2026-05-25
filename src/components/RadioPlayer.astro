@@ -1,0 +1,25 @@
+---
+---
+<div class="player" data-player>
+  <div class="player-loading" data-status>
+    <p>Зареждане на станции…</p>
+  </div>
+  <div class="stations" data-stations></div>
+</div>
+
+<div class="now-playing" data-now-playing aria-live="polite">
+  <div class="np-info">
+    <div class="np-logo" data-np-logo></div>
+    <div class="np-text">
+      <div class="np-name" data-np-name></div>
+      <div class="np-state" data-np-state></div>
+    </div>
+  </div>
+  <button class="np-btn" data-np-toggle type="button" aria-label="Пусни">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+  </button>
+</div>
+
+<script>
+  import '../scripts/player.ts';
+</script>

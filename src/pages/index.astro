@@ -1,0 +1,84 @@
+---
+// PLACEHOLDERS to fill in before publishing:
+//   PLAY_STORE_URL_HERE    — your Google Play listing URL
+//   YOUR_EMAIL@example.com — your contact email (see Base.astro footer)
+import Base from '../layouts/Base.astro';
+import Feature from '../components/Feature.astro';
+import RadioPlayer from '../components/RadioPlayer.astro';
+
+const PLAY_STORE_URL = 'PLAY_STORE_URL_HERE';
+
+const features = [
+  {
+    title: 'Стотици станции',
+    description: 'Над 100 български радио станции на едно място — поп, рок, фолк, дип хаус и още.',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 11h16M4 16h16M9 7l3-3 3 3"/><circle cx="8" cy="16" r="1.5" fill="currentColor"/></svg>',
+  },
+  {
+    title: 'Любими станции',
+    description: 'Запази любимите си за един клик. Бърз достъп до това, което слушаш най-често.',
+    icon: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 17.3l-5.4 3.2 1.4-6.1L3 10.4l6.2-.5L12 4l2.8 5.9 6.2.5-5 4 1.4 6.1z"/></svg>',
+  },
+  {
+    title: 'История на слушане',
+    description: 'Виж последно слушаните станции и се върни към тях с едно докосване.',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  },
+  {
+    title: 'Безплатно и просто',
+    description: 'Без регистрация, без абонамент. Отвори, избери станция, слушай.',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg>',
+  },
+];
+---
+<Base title="Радио България — Български радио станции на Android">
+  <section class="hero container">
+    <img class="hero-logo" src="/logo.jpeg" alt="Радио България" />
+    <h1>Радио България</h1>
+    <p class="tagline">Слушай любимите си български радио станции навсякъде. Безплатно Android приложение.</p>
+    <a class="cta" href={PLAY_STORE_URL} id="download">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 20.5V3.5c0-.6.3-1.1.8-1.4L13.5 12 3.8 21.9c-.5-.3-.8-.8-.8-1.4zm10.6-8.5l2.5-2.5L5.5 3.4c-.3-.2-.6-.3-.9-.3l9 8.9zm6.5-3.7L17.5 9.7l-2.7 2.3 2.7 2.3 2.6-1.4c.8-.5.8-1.7 0-2.1zM4.6 20.9c.3 0 .6-.1.9-.3l10.6-6.1-2.5-2.5-9 8.9z"/></svg>
+      Свали от Google Play
+    </a>
+  </section>
+
+  <section class="container player-section">
+    <div class="section-head">
+      <h2>Пробвай преди да свалиш</h2>
+      <p>Истински български радио станции, директно в браузъра. Със същия отворен каталог, който използва приложението.</p>
+    </div>
+    <RadioPlayer />
+  </section>
+
+  <section id="features" class="container">
+    <div class="section-head">
+      <h2>Защо Радио България</h2>
+      <p>Всичко необходимо, за да слушаш българско радио — без излишни функции.</p>
+    </div>
+    <div class="features">
+      {features.map((f) => <Feature title={f.title} description={f.description} icon={f.icon} />)}
+    </div>
+  </section>
+
+  <section class="container">
+    <div class="section-head">
+      <h2>Така изглежда приложението</h2>
+      <p>Просто, чисто и в твоя стил.</p>
+    </div>
+    <div class="screenshots">
+      <img src="/screenshots/home.png" alt="Списък със станции" loading="lazy" />
+      <img src="/screenshots/favorites.png" alt="Любими станции" loading="lazy" />
+      <img src="/screenshots/history.png" alt="История на слушане" loading="lazy" />
+      <img src="/screenshots/player.png" alt="Плейър" loading="lazy" />
+    </div>
+  </section>
+
+  <section class="container" style="text-align: center;">
+    <h2>Готов за слушане?</h2>
+    <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Свалете приложението безплатно от Google Play.</p>
+    <a class="cta" href={PLAY_STORE_URL}>
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 20.5V3.5c0-.6.3-1.1.8-1.4L13.5 12 3.8 21.9c-.5-.3-.8-.8-.8-1.4zm10.6-8.5l2.5-2.5L5.5 3.4c-.3-.2-.6-.3-.9-.3l9 8.9zm6.5-3.7L17.5 9.7l-2.7 2.3 2.7 2.3 2.6-1.4c.8-.5.8-1.7 0-2.1zM4.6 20.9c.3 0 .6-.1.9-.3l10.6-6.1-2.5-2.5-9 8.9z"/></svg>
+      Свали от Google Play
+    </a>
+  </section>
+</Base>
