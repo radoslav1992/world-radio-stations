@@ -164,9 +164,17 @@ class Player {
         if (!r1.ok) throw new Error('API ' + r1.status);
         const raw1: Station[] = await r1.json();
         const raw2: Station[] = r2 && r2.ok ? await r2.json() : [];
-        const seen = new Set(raw1.map((s) => s.stationuuid));
-        const merged = [...raw1, ...raw2.filter((s) => !seen.has(s.stationuuid))];
-        this.all = merged.filter((s) => s.url_resolved.startsWith('https://'));
+        const seenUuid = new Set(raw1.map((s) => s.stationuuid));
+        const merged = [...raw1, ...raw2.filter((s) => !seenUuid.has(s.stationuuid))];
+        const seenName = new Set<string>();
+        const deduped: Station[] = [];
+        for (const s of merged) {
+          const key = s.name.trim().toLowerCase();
+          if (seenName.has(key)) continue;
+          seenName.add(key);
+          deduped.push(s);
+        }
+        this.all = deduped.filter((s) => s.url_resolved.startsWith('https://'));
       } else if (this.mode === 'favorites') {
         this.all = getFavorites();
       } else if (this.mode === 'history') {
