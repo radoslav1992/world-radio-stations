@@ -68,9 +68,12 @@ const jsonLd = {
     <Content />
 
     <div class="blog-cta">
-      <p>Слушайте {station.data.name} и още над 100 станции безплатно.</p>
+      <p>Потърсете {station.data.name} в нашия уеб плейър или слушайте директно от официалния сайт на станцията.</p>
       <div class="hero-ctas">
-        <a class="cta cta-secondary" href="/#player">Слушай онлайн</a>
+        <a class="cta cta-secondary" href="/#player">Търси в плейъра</a>
+        {station.data.website && (
+          <a class="cta cta-secondary" href={station.data.website} target="_blank" rel="noopener">Официален сайт</a>
+        )}
         <a class="cta cta-secondary" href="/stations">Всички станции</a>
       </div>
     </div>
