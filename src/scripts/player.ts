@@ -8,7 +8,8 @@ import {
   toggleFavorite,
 } from './store';
 
-const API = 'https://de1.api.radio-browser.info/json/stations/bycountrycodeexact/BG';
+const API_BY_CODE = 'https://de1.api.radio-browser.info/json/stations/bycountrycodeexact/BG';
+const API_BY_NAME = 'https://de1.api.radio-browser.info/json/stations/bycountry/Bulgaria';
 const QUERY = '?limit=2000&hidebroken=true&order=clickcount&reverse=true';
 const STORAGE_KEY = 'br-last-station';
 const VOLUME_KEY = 'br-volume';
@@ -156,10 +157,16 @@ class Player {
   async init() {
     try {
       if (this.mode === 'browse') {
-        const res = await fetch(API + QUERY);
-        if (!res.ok) throw new Error('API ' + res.status);
-        const raw: Station[] = await res.json();
-        this.all = raw.filter((s) => s.url_resolved.startsWith('https://') && s.hls === 0);
+        const [r1, r2] = await Promise.all([
+          fetch(API_BY_CODE + QUERY),
+          fetch(API_BY_NAME + QUERY).catch(() => null),
+        ]);
+        if (!r1.ok) throw new Error('API ' + r1.status);
+        const raw1: Station[] = await r1.json();
+        const raw2: Station[] = r2 && r2.ok ? await r2.json() : [];
+        const seen = new Set(raw1.map((s) => s.stationuuid));
+        const merged = [...raw1, ...raw2.filter((s) => !seen.has(s.stationuuid))];
+        this.all = merged.filter((s) => s.url_resolved.startsWith('https://') && s.hls === 0);
       } else if (this.mode === 'favorites') {
         this.all = getFavorites();
       } else if (this.mode === 'history') {
