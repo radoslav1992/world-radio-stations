@@ -3,7 +3,6 @@
 import Base from '../layouts/Base.astro';
 import Feature from '../components/Feature.astro';
 import RadioPlayer from '../components/RadioPlayer.astro';
-import AdSlot from '../components/AdSlot.astro';
 import { getCollection } from 'astro:content';
 
 const latestPosts = (await getCollection('blog'))
@@ -156,8 +155,6 @@ const jsonLd = [
     <RadioPlayer />
   </section>
 
-  <AdSlot label="Реклама" format="horizontal" />
-
   <section id="features" class="container">
     <div class="section-head">
       <h2>Защо Радио България</h2>
@@ -224,8 +221,6 @@ const jsonLd = [
       <a class="link-arrow" href="/blog">Всички статии →</a>
     </div>
   </section>
-
-  <AdSlot label="Реклама" format="horizontal" />
 
   <section id="faq" class="container">
     <div class="section-head">
