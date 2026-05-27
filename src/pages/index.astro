@@ -114,6 +114,11 @@ const jsonLd = [
     name: 'Радио България',
     url: 'https://bulgariaradio.com',
     inLanguage: 'bg',
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: 'https://bulgariaradio.com/#player',
+      'query-input': 'required name=search_term_string',
+    },
   },
 ];
 ---
@@ -188,7 +193,7 @@ const jsonLd = [
         музика и не е свързано с конкретна радиостанция или медийна група.
       </p>
       <p>
-        Каталогът се захранва от <a href="https://www.radio-browser.info" target="_blank" rel="noopener">Radio Browser</a>
+        Каталогът се захранва от <a href="https://www.radio-browser.info" target="_blank" rel="noopener noreferrer">Radio Browser</a>
         — отворена, общностно поддържана база данни. Самото съдържание (музика, новини, реклами)
         принадлежи на съответните радиа.
       </p>
