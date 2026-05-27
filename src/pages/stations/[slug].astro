@@ -14,6 +14,11 @@ export async function getStaticPaths() {
 const { station } = Astro.props;
 const { Content } = await station.render();
 
+const allStations = await getCollection('stations');
+const similar = allStations
+  .filter((s) => s.slug !== station.slug && s.data.format === station.data.format)
+  .slice(0, 4);
+
 const SITE_URL = 'https://bulgariaradio.com';
 
 const jsonLd = {
@@ -66,6 +71,25 @@ const jsonLd = {
     </div>
 
     <Content />
+
+    {similar.length > 0 && (
+      <div class="similar-stations">
+        <h2>Подобни станции</h2>
+        <div class="station-directory" style="margin-bottom:2rem;">
+          {similar.map((s) => (
+            <a href={`/stations/${s.slug}`} class="blog-card">
+              <div class="blog-card-body">
+                <div class="blog-card-tags">
+                  <span class="tag-chip">{s.data.format}</span>
+                </div>
+                <h3>{s.data.name}</h3>
+                <p>{s.data.description}</p>
+              </div>
+            </a>
+          ))}
+        </div>
+      </div>
+    )}
 
     <div class="blog-cta">
       <p>Потърсете {station.data.name} в нашия уеб плейър или слушайте директно от официалния сайт на станцията.</p>

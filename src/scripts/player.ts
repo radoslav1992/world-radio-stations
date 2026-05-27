@@ -49,7 +49,9 @@ class Player {
   private stationCards = new Map<string, HTMLElement>();
   private observer: IntersectionObserver | null = null;
   private activeGenre = 'all';
+  private activeCity = 'all';
   private genreContainer: HTMLElement | null = null;
+  private cityContainer: HTMLElement | null = null;
 
   // Sleep timer
   private sleepTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -159,6 +161,8 @@ class Player {
       toggleFavorite(this.current);
     });
     this.modalVote.addEventListener('click', () => this.vote());
+    const shareBtn = document.querySelector<HTMLButtonElement>('[data-modal-share]');
+    if (shareBtn) shareBtn.addEventListener('click', () => this.share());
     this.modal.addEventListener('click', (e) => {
       if (e.target === this.modal) this.closeModal();
     });
@@ -173,6 +177,7 @@ class Player {
 
     if (this.searchEl) this.searchEl.addEventListener('input', () => this.applyFilter());
     this.genreContainer = document.querySelector<HTMLElement>('[data-genres]');
+    this.cityContainer = document.querySelector<HTMLElement>('[data-cities]');
     this.npSongEl = document.querySelector<HTMLElement>('[data-np-song]');
 
     // Sleep timer
@@ -227,7 +232,10 @@ class Player {
       this.statusEl.style.display = 'none';
       const toolbar = document.querySelector<HTMLElement>('.player-toolbar');
       if (toolbar) toolbar.style.display = '';
-      if (this.mode === 'browse') this.buildGenreFilters();
+      if (this.mode === 'browse') {
+        this.buildGenreFilters();
+        this.buildCityFilters();
+      }
       this.applyFilter();
       this.setupInfiniteScroll();
     } catch (err) {
@@ -260,6 +268,9 @@ class Player {
     let list = this.all;
     if (this.activeGenre !== 'all') {
       list = list.filter((s) => this.stationMatchesGenre(s, this.activeGenre));
+    }
+    if (this.activeCity !== 'all') {
+      list = list.filter((s) => (s.state || '').toLowerCase() === this.activeCity.toLowerCase());
     }
     this.filtered = q
       ? list.filter((s) =>
@@ -309,6 +320,35 @@ class Player {
       this.activeGenre = btn.dataset.genre || 'all';
       this.genreContainer!.querySelectorAll('.genre-pill').forEach((b) =>
         b.classList.toggle('active', (b as HTMLElement).dataset.genre === this.activeGenre)
+      );
+      this.applyFilter();
+    });
+  }
+
+  private buildCityFilters() {
+    if (!this.cityContainer) return;
+    const cityCounts = new Map<string, number>();
+    for (const s of this.all) {
+      const city = (s.state || '').trim();
+      if (city) cityCounts.set(city, (cityCounts.get(city) || 0) + 1);
+    }
+    const sorted = [...cityCounts.entries()]
+      .filter(([, c]) => c >= 2)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 12);
+    if (sorted.length === 0) return;
+
+    this.cityContainer.style.display = '';
+    this.cityContainer.innerHTML = `<button class="genre-pill active" data-city="all">Всички градове</button>`
+      + sorted.map(([name, count]) =>
+        `<button class="genre-pill" data-city="${escapeAttr(name)}">${escapeHtml(name)} (${count})</button>`
+      ).join('');
+    this.cityContainer.addEventListener('click', (e) => {
+      const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-city]');
+      if (!btn) return;
+      this.activeCity = btn.dataset.city || 'all';
+      this.cityContainer!.querySelectorAll('.genre-pill').forEach((b) =>
+        b.classList.toggle('active', (b as HTMLElement).dataset.city === this.activeCity)
       );
       this.applyFilter();
     });
@@ -420,11 +460,12 @@ class Player {
       : `<span class="fallback">${initial}</span>`;
     const fav = isFavorite(s.stationuuid);
     const votes = s.votes > 0 ? `<span class="station-votes" title="${s.votes} гласа">★ ${s.votes}</span>` : '';
+    const bitrate = s.bitrate > 0 ? `<span class="station-bitrate">${s.bitrate} kbps</span>` : '';
     card.innerHTML = `
       <div class="station-logo">${logo}</div>
       <div class="station-meta">
         <p class="station-name">${escapeHtml(s.name)}</p>
-        <span class="station-tag-row">${tag ? `<span class="station-tag">${escapeHtml(tag)}</span>` : ''}${votes}</span>
+        <span class="station-tag-row">${tag ? `<span class="station-tag">${escapeHtml(tag)}</span>` : ''}${bitrate}${votes}</span>
       </div>
       <button class="fav-btn ${fav ? 'active' : ''}" data-fav type="button" aria-label="${fav ? 'Премахни от любими' : 'Добави в любими'}" aria-pressed="${fav}">
         ${ICON_STAR}
@@ -589,6 +630,21 @@ class Player {
       this.modalVoteLabel.textContent = 'Гласувай';
       this.modalVote.disabled = false;
     }, 3000);
+  }
+
+  private async share() {
+    if (!this.current) return;
+    const text = `Слушам ${this.current.name} в Радио България`;
+    const url = window.location.origin;
+    const label = document.querySelector<HTMLElement>('[data-share-label]');
+    if (navigator.share) {
+      try { await navigator.share({ title: text, url }); } catch { /* cancelled */ }
+    } else {
+      try {
+        await navigator.clipboard.writeText(`${text} — ${url}`);
+        if (label) { label.textContent = 'Копирано!'; setTimeout(() => { label.textContent = 'Сподели'; }, 2000); }
+      } catch { /* ignore */ }
+    }
   }
 
   /** Sync star states on all rendered cards + modal star to localStorage truth. */
