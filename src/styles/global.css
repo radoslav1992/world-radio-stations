@@ -166,6 +166,18 @@ p { color: var(--text); }
 }
 .cta:active { transform: translateY(0); }
 .cta svg { width: 22px; height: 22px; }
+.cta.cta-coming-soon {
+  background: var(--border);
+  color: var(--text-muted);
+  cursor: default;
+  box-shadow: none;
+  font-size: 0.95rem;
+}
+.cta.cta-coming-soon:hover {
+  filter: none;
+  transform: none;
+  box-shadow: none;
+}
 
 section { padding: 3rem 0; }
 section.player-section { padding-bottom: 4rem; }

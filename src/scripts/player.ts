@@ -345,7 +345,7 @@ class Player {
   }
 
   private showError(msg: string) {
-    this.statusEl.innerHTML = `<p>${escapeHtml(msg)}<br>Свалете приложението за пълно изживяване.</p>`;
+    this.statusEl.innerHTML = `<p>${escapeHtml(msg)}<br>Опитайте отново или проверете интернет връзката си.</p>`;
   }
 
   private play(s: Station) {
