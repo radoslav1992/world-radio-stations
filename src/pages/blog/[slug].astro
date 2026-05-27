@@ -12,9 +12,13 @@ export async function getStaticPaths() {
 }
 
 const { post } = Astro.props;
-const { Content } = await post.render();
+const { Content, remarkPluginFrontmatter } = await post.render();
 
 const SITE_URL = 'https://bulgariaradio.com';
+
+const body = post.body || '';
+const wordCount = body.split(/\s+/).filter(Boolean).length;
+const readingTime = Math.max(1, Math.round(wordCount / 200));
 
 const jsonLd = {
   '@context': 'https://schema.org',
@@ -30,12 +34,14 @@ const jsonLd = {
   publisher: {
     '@type': 'Organization',
     name: 'Радио България',
-    logo: { '@type': 'ImageObject', url: `${SITE_URL}/logo.jpeg` },
+    logo: { '@type': 'ImageObject', url: `${SITE_URL}/logo.png` },
   },
   mainEntityOfPage: {
     '@type': 'WebPage',
     '@id': `${SITE_URL}/blog/${post.slug}`,
   },
+  image: `${SITE_URL}/logo.png`,
+  wordCount,
   inLanguage: 'bg',
   keywords: post.data.tags.join(', '),
 };
@@ -47,6 +53,7 @@ const jsonLd = {
   jsonLd={jsonLd}
   publishedTime={post.data.date}
   articleAuthor={post.data.author}
+  articleTags={post.data.tags}
 >
   <Breadcrumbs crumbs={[
     { label: 'Начало', href: '/' },
@@ -65,6 +72,7 @@ const jsonLd = {
         })}
       </time>
       {post.data.author && <span> · {post.data.author}</span>}
+      <span> · {readingTime} мин. четене</span>
     </p>
 
     <Content />

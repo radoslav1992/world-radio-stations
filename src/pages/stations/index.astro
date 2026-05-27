@@ -6,13 +6,29 @@ import { getCollection } from 'astro:content';
 const stations = (await getCollection('stations'))
   .sort((a, b) => a.data.name.localeCompare(b.data.name, 'bg'));
 
-const jsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'CollectionPage',
-  name: 'Български радио станции — справочник',
-  description: 'Справочник на българските радио станции — история, формат, честоти и полезна информация.',
-  inLanguage: 'bg',
-};
+const SITE_URL = 'https://bulgariaradio.com';
+
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: 'Български радио станции — справочник',
+    description: 'Справочник на българските радио станции — история, формат, честоти и полезна информация.',
+    inLanguage: 'bg',
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: 'Български радио станции',
+    numberOfItems: stations.length,
+    itemListElement: stations.map((s, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name: s.data.name,
+      url: `${SITE_URL}/stations/${s.slug}`,
+    })),
+  },
+];
 ---
 <Base
   title="Български радио станции — справочник"

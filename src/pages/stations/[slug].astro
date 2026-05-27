@@ -58,7 +58,7 @@ const jsonLd = {
           <tr><th>Честоти</th><td>{station.data.frequencies.join(', ')}</td></tr>
         )}
         {station.data.website && (
-          <tr><th>Уебсайт</th><td><a href={station.data.website} target="_blank" rel="noopener">{station.data.website.replace('https://', '')}</a></td></tr>
+          <tr><th>Уебсайт</th><td><a href={station.data.website} target="_blank" rel="noopener noreferrer">{station.data.website.replace('https://', '')}</a></td></tr>
         )}
         <tr><th>Език</th><td>{station.data.language}</td></tr>
         <tr><th>Страна</th><td>{station.data.country}</td></tr>
@@ -72,7 +72,7 @@ const jsonLd = {
       <div class="hero-ctas">
         <a class="cta cta-secondary" href="/#player">Търси в плейъра</a>
         {station.data.website && (
-          <a class="cta cta-secondary" href={station.data.website} target="_blank" rel="noopener">Официален сайт</a>
+          <a class="cta cta-secondary" href={station.data.website} target="_blank" rel="noopener noreferrer">Официален сайт</a>
         )}
         <a class="cta cta-secondary" href="/stations">Всички станции</a>
       </div>
