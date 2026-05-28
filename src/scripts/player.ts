@@ -16,8 +16,10 @@ const STORAGE_KEY = 'wrs-last-station';
 const VOLUME_KEY = 'wrs-volume';
 const VIEW_KEY = 'wrs-view';
 const COUNTRY_KEY = 'wrs-country';
-const BATCH_SIZE = 24;
-const SERVER_LIMIT = 100;
+const PAGE_SIZE = 24;
+// Upper bound of stations loaded per country in one request. Large countries are
+// returned ordered by popularity, so this is effectively "the top N stations".
+const FETCH_LIMIT = 1000;
 const SONG_POLL_MS = 30_000;
 
 // Maps Radio Browser tag keywords to a tidy display genre.
@@ -40,29 +42,25 @@ class Player {
   private audio = new Audio();
   private all: Station[] = [];
   private filtered: Station[] = [];
-  private rendered = 0;
+  private page = 1;
   private current: Station | null = null;
   private state: PlayState = 'paused';
 
   // Player section refs
+  private rootEl: HTMLElement;
   private statusEl: HTMLElement;
   private stationsEl: HTMLElement;
   private searchEl: HTMLInputElement | null;
   private countEl: HTMLElement;
-  private sentinelEl: HTMLElement;
+  private pagerEl: HTMLElement | null;
   private viewButtons: NodeListOf<HTMLButtonElement>;
   private view: View = 'list';
   private stationCards = new Map<string, HTMLElement>();
-  private observer: IntersectionObserver | null = null;
   private activeGenre = 'all';
   private genreContainer: HTMLElement | null = null;
   private countrySelect: HTMLSelectElement | null = null;
-
-  // Server-side pagination (browse mode)
   private country = '';
-  private serverOffset = 0;
-  private serverHasMore = true;
-  private loadingMore = false;
+  private loadToken = 0;
 
   // Sleep timer
   private sleepTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -102,12 +100,13 @@ class Player {
   private modalVoteCount: HTMLElement;
 
   constructor(root: HTMLElement) {
+    this.rootEl = root;
     this.mode = (root.dataset.mode as Mode) || 'browse';
     this.statusEl = root.querySelector<HTMLElement>('[data-status]')!;
     this.stationsEl = root.querySelector<HTMLElement>('[data-stations]')!;
     this.searchEl = root.querySelector<HTMLInputElement>('[data-search]');
     this.countEl = root.querySelector<HTMLElement>('[data-count]')!;
-    this.sentinelEl = root.querySelector<HTMLElement>('[data-sentinel]')!;
+    this.pagerEl = root.querySelector<HTMLElement>('[data-pager]');
     this.viewButtons = root.querySelectorAll<HTMLButtonElement>('.vt-btn');
     this.countrySelect = root.querySelector<HTMLSelectElement>('[data-country]');
 
@@ -212,6 +211,15 @@ class Player {
       });
     }
 
+    // Pagination (delegated, attached once)
+    if (this.pagerEl) {
+      this.pagerEl.addEventListener('click', (e) => {
+        const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-page]');
+        if (!btn || btn.disabled) return;
+        this.setPage(parseInt(btn.dataset.page || '1', 10));
+      });
+    }
+
     // Sleep timer
     const sleepToggle = document.querySelector<HTMLButtonElement>('[data-sleep-toggle]');
     const sleepOptions = document.querySelector<HTMLElement>('[data-sleep-options]');
@@ -251,7 +259,6 @@ class Player {
         this.country = localStorage.getItem(COUNTRY_KEY) || '';
         this.buildCountrySelect();
         this.showToolbar();
-        this.setupInfiniteScroll();
         await this.loadCountry(this.country);
         return;
       }
@@ -263,8 +270,8 @@ class Player {
       }
       this.statusEl.style.display = 'none';
       this.showToolbar();
+      this.restoreLast();
       this.applyFilter();
-      this.setupInfiniteScroll();
     } catch (err) {
       console.error(err);
       this.showError('We couldn’t load the stations.');
@@ -284,60 +291,72 @@ class Player {
     this.countrySelect.value = this.country;
   }
 
-  /** Reset and load the first page for a country (empty code = worldwide top). */
+  /** Load all stations for a country at once (empty code = worldwide top). */
   private async loadCountry(code: string) {
+    const token = ++this.loadToken;
     this.country = code;
     try { localStorage.setItem(COUNTRY_KEY, code); } catch { /* ignore */ }
     this.all = [];
-    this.serverOffset = 0;
-    this.serverHasMore = true;
     this.activeGenre = 'all';
-    this.current && this.updateActiveCard(null);
+    this.page = 1;
     this.stationCards.clear();
     this.stationsEl.innerHTML = '';
-    this.sentinelEl.style.display = 'none';
+    if (this.pagerEl) { this.pagerEl.innerHTML = ''; this.pagerEl.style.display = 'none'; }
     this.statusEl.style.display = '';
     this.statusEl.innerHTML = '<div class="spinner"></div><p>Loading stations…</p>';
 
-    await this.fetchMore();
+    let list: Station[];
+    try {
+      list = await this.fetchAll(code);
+    } catch (err) {
+      if (token !== this.loadToken) return;
+      console.error(err);
+      this.showError('We couldn’t load the stations.');
+      return;
+    }
+    if (token !== this.loadToken) return;
 
+    this.all = list;
     this.statusEl.style.display = 'none';
     if (this.all.length === 0) {
       this.showEmpty();
-      if (this.genreContainer) this.genreContainer.style.display = 'none';
+      if (this.genreContainer) { this.genreContainer.style.display = 'none'; this.genreContainer.innerHTML = ''; }
       this.filtered = [];
-      this.updateCount();
+      this.updateCount(1);
       return;
     }
     this.buildGenreFilters();
+    this.restoreLast();
     this.applyFilter();
   }
 
-  /** Fetch the next server page for the current country. Returns # of new stations added. */
-  private async fetchMore(): Promise<number> {
-    if (this.mode !== 'browse' || this.loadingMore || !this.serverHasMore) return 0;
-    this.loadingMore = true;
-    try {
-      const params = new URLSearchParams({
-        offset: String(this.serverOffset),
-        limit: String(SERVER_LIMIT),
-      });
-      if (this.country) params.set('country', this.country);
-      const res = await fetch(`${API_STATIONS}?${params}`);
-      if (!res.ok) throw new Error('API ' + res.status);
-      const page: Station[] = await res.json();
-      const seen = new Set(this.all.map((s) => s.stationuuid));
-      const fresh = page.filter((s) => s.stationuuid && !seen.has(s.stationuuid));
-      this.all.push(...fresh);
-      this.serverOffset += page.length;
-      if (page.length < SERVER_LIMIT) this.serverHasMore = false;
-      return fresh.length;
-    } catch (err) {
-      console.error(err);
-      this.serverHasMore = false;
-      return 0;
-    } finally {
-      this.loadingMore = false;
+  /** Fetch the full station list for the current country in one request. */
+  private async fetchAll(code: string): Promise<Station[]> {
+    const params = new URLSearchParams({ limit: String(FETCH_LIMIT) });
+    if (code) params.set('country', code);
+    const res = await fetch(`${API_STATIONS}?${params}`);
+    if (!res.ok) throw new Error('API ' + res.status);
+    const list: Station[] = await res.json();
+    const seen = new Set<string>();
+    const deduped: Station[] = [];
+    for (const s of list) {
+      if (!s.stationuuid || seen.has(s.stationuuid)) continue;
+      seen.add(s.stationuuid);
+      deduped.push(s);
+    }
+    return deduped;
+  }
+
+  /** Restore the last-played station into the mini bar (paused), if present. */
+  private restoreLast() {
+    if (this.current) return;
+    const lastId = localStorage.getItem(STORAGE_KEY);
+    if (!lastId) return;
+    const s = this.all.find((x) => x.stationuuid === lastId);
+    if (s) {
+      this.current = s;
+      this.showNowPlaying(s, 'paused');
+      this.updateNavButtons();
     }
   }
 
@@ -351,7 +370,7 @@ class Player {
       if (toolbar) toolbar.style.display = 'none';
       this.stationsEl.innerHTML = '';
       this.stationCards.clear();
-      this.sentinelEl.style.display = 'none';
+      if (this.pagerEl) { this.pagerEl.innerHTML = ''; this.pagerEl.style.display = 'none'; }
       return;
     }
     this.statusEl.style.display = 'none';
@@ -374,11 +393,8 @@ class Player {
 
   private applyFilter() {
     this.recomputeFiltered();
-    this.rendered = 0;
-    this.stationsEl.innerHTML = '';
-    this.stationCards.clear();
-    this.updateCount();
-    this.renderNextBatch();
+    this.page = 1;
+    this.renderPage();
     this.updateNavButtons();
   }
 
@@ -469,58 +485,76 @@ class Player {
     } catch { /* ignore */ }
   }
 
-  private updateCount() {
+  private updateCount(totalPages: number) {
     const shown = this.filtered.length;
     const noun = this.mode === 'favorites' ? 'favorites' : this.mode === 'history' ? 'in history' : 'stations';
-    const more = this.mode === 'browse' && this.serverHasMore ? '+' : '';
-    this.countEl.textContent = `${shown}${more} ${noun}`;
+    let txt = `${shown} ${noun}`;
+    if (totalPages > 1) txt += ` · Page ${this.page} of ${totalPages}`;
+    this.countEl.textContent = txt;
   }
 
-  private renderNextBatch() {
-    const next = this.filtered.slice(this.rendered, this.rendered + BATCH_SIZE);
+  private renderPage(scroll = false) {
+    const total = this.filtered.length;
+    const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    if (this.page > totalPages) this.page = totalPages;
+    if (this.page < 1) this.page = 1;
+
+    this.stationsEl.innerHTML = '';
+    this.stationCards.clear();
+
+    if (total === 0) {
+      this.stationsEl.innerHTML = '<p class="empty">No stations match your filters.</p>';
+      this.buildPager(1);
+      this.updateCount(1);
+      return;
+    }
+
+    const start = (this.page - 1) * PAGE_SIZE;
+    const slice = this.filtered.slice(start, start + PAGE_SIZE);
     const frag = document.createDocumentFragment();
-    const lastId = localStorage.getItem(STORAGE_KEY);
-    for (const s of next) {
+    for (const s of slice) {
       const card = this.makeStationCard(s);
       this.stationCards.set(s.stationuuid, card);
       frag.appendChild(card);
-      if (s.stationuuid === lastId && !this.current) {
-        this.current = s;
-        this.showNowPlaying(s, 'paused');
-      }
     }
     this.stationsEl.appendChild(frag);
-    this.rendered += next.length;
-    const more = this.rendered < this.filtered.length || (this.mode === 'browse' && this.serverHasMore);
-    this.sentinelEl.style.display = more ? '' : 'none';
-    if (this.current && this.state === 'playing') {
-      this.updateActiveCard(this.current.stationuuid);
+
+    this.buildPager(totalPages);
+    this.updateCount(totalPages);
+    this.updateActiveCard(this.current && !this.audio.paused ? this.current.stationuuid : null);
+    if (scroll) {
+      const top = this.rootEl.getBoundingClientRect().top + window.scrollY - 12;
+      window.scrollTo({ top, behavior: 'smooth' });
     }
   }
 
-  private setupInfiniteScroll() {
-    if (this.observer) this.observer.disconnect();
-    this.observer = new IntersectionObserver(
-      async (entries) => {
-        for (const e of entries) {
-          if (!e.isIntersecting) continue;
-          if (this.rendered < this.filtered.length) {
-            this.renderNextBatch();
-          } else if (this.mode === 'browse' && this.serverHasMore && !this.loadingMore) {
-            const added = await this.fetchMore();
-            this.recomputeFiltered();
-            this.updateCount();
-            if (added > 0) {
-              this.renderNextBatch();
-            } else {
-              this.sentinelEl.style.display = this.serverHasMore ? '' : 'none';
-            }
-          }
-        }
-      },
-      { rootMargin: '400px 0px' }
-    );
-    this.observer.observe(this.sentinelEl);
+  private buildPager(totalPages: number) {
+    if (!this.pagerEl) return;
+    if (totalPages <= 1) {
+      this.pagerEl.innerHTML = '';
+      this.pagerEl.style.display = 'none';
+      return;
+    }
+    this.pagerEl.style.display = '';
+    const cur = this.page;
+    const parts: string[] = [];
+    parts.push(`<button class="pager-btn pager-nav" data-page="${cur - 1}" ${cur === 1 ? 'disabled' : ''} aria-label="Previous page">‹</button>`);
+    let prev = 0;
+    for (const p of pageWindow(cur, totalPages)) {
+      if (prev && p - prev > 1) parts.push('<span class="pager-gap">…</span>');
+      parts.push(`<button class="pager-btn ${p === cur ? 'active' : ''}" data-page="${p}" ${p === cur ? 'aria-current="page"' : ''}>${p}</button>`);
+      prev = p;
+    }
+    parts.push(`<button class="pager-btn pager-nav" data-page="${cur + 1}" ${cur === totalPages ? 'disabled' : ''} aria-label="Next page">›</button>`);
+    this.pagerEl.innerHTML = parts.join('');
+  }
+
+  private setPage(p: number) {
+    const totalPages = Math.max(1, Math.ceil(this.filtered.length / PAGE_SIZE));
+    const next = Math.min(totalPages, Math.max(1, p));
+    if (next === this.page) return;
+    this.page = next;
+    this.renderPage(true);
   }
 
   private makeStationCard(s: Station): HTMLElement {
@@ -602,10 +636,23 @@ class Player {
     this.audio.src = s.url_resolved;
     void this.audio.play().catch(() => this.setState('error'));
     this.showNowPlaying(s, 'loading');
-    this.updateActiveCard(s.stationuuid);
+    this.goToStation(s);
     localStorage.setItem(STORAGE_KEY, s.stationuuid);
     addToHistory(s);
     this.updateNavButtons();
+  }
+
+  /** Make sure the station's page is shown and its card highlighted. */
+  private goToStation(s: Station) {
+    const idx = this.filtered.findIndex((x) => x.stationuuid === s.stationuuid);
+    if (idx >= 0) {
+      const p = Math.floor(idx / PAGE_SIZE) + 1;
+      if (p !== this.page) {
+        this.page = p;
+        this.renderPage();
+      }
+    }
+    this.updateActiveCard(s.stationuuid);
   }
 
   private toggle() {
@@ -783,6 +830,12 @@ const ICON_PAUSE =
   '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>';
 const ICON_STAR =
   '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 17.3l-5.4 3.2 1.4-6.1L3 10.4l6.2-.5L12 4l2.8 5.9 6.2.5-5 4 1.4 6.1z"/></svg>';
+
+/** Page numbers to show: first, last, and a ±2 window around the current page. */
+function pageWindow(cur: number, total: number): number[] {
+  const s = new Set<number>([1, total, cur - 2, cur - 1, cur, cur + 1, cur + 2]);
+  return [...s].filter((p) => p >= 1 && p <= total).sort((a, b) => a - b);
+}
 
 function escapeHtml(s: string) {
   return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
