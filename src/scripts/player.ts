@@ -7,22 +7,28 @@ import {
   isFavorite,
   toggleFavorite,
 } from './store';
+import { COUNTRIES } from './countries';
 
 const API_STATIONS = '/api/stations';
 const API_VOTE = '/api/vote';
 const API_NOW_PLAYING = '/api/now-playing';
-const STORAGE_KEY = 'br-last-station';
-const VOLUME_KEY = 'br-volume';
-const VIEW_KEY = 'br-view';
+const STORAGE_KEY = 'wrs-last-station';
+const VOLUME_KEY = 'wrs-volume';
+const VIEW_KEY = 'wrs-view';
+const COUNTRY_KEY = 'wrs-country';
 const BATCH_SIZE = 24;
+const SERVER_LIMIT = 100;
 const SONG_POLL_MS = 30_000;
 
+// Maps Radio Browser tag keywords to a tidy display genre.
 const GENRE_MAP: Record<string, string> = {
-  pop: 'Поп', rock: 'Рок', folk: 'Фолк', jazz: 'Джаз', classical: 'Класика',
-  news: 'Новини', dance: 'Танцувална', electronic: 'Електронна', 'hip hop': 'Хип-хоп',
-  '80s': 'Ретро', '90s': 'Ретро', retro: 'Ретро', oldies: 'Ретро',
-  chalga: 'Чалга', 'pop folk': 'Чалга', turbofolk: 'Чалга',
-  ambient: 'Релакс', chillout: 'Релакс', lounge: 'Релакс',
+  pop: 'Pop', rock: 'Rock', jazz: 'Jazz', classical: 'Classical', classic: 'Classical',
+  news: 'News', talk: 'Talk', dance: 'Dance', electronic: 'Electronic', house: 'Electronic',
+  techno: 'Electronic', 'hip hop': 'Hip-Hop', hiphop: 'Hip-Hop', rap: 'Hip-Hop',
+  country: 'Country', folk: 'Folk', metal: 'Metal', '80s': 'Oldies', '90s': 'Oldies',
+  oldies: 'Oldies', retro: 'Oldies', sport: 'Sports', sports: 'Sports',
+  ambient: 'Chill', chillout: 'Chill', lounge: 'Chill', chill: 'Chill',
+  reggae: 'Reggae', blues: 'Blues', soul: 'Soul', 'r&b': 'R&B', rnb: 'R&B',
 };
 
 type View = 'list' | 'grid';
@@ -49,9 +55,14 @@ class Player {
   private stationCards = new Map<string, HTMLElement>();
   private observer: IntersectionObserver | null = null;
   private activeGenre = 'all';
-  private activeCity = 'all';
   private genreContainer: HTMLElement | null = null;
-  private cityContainer: HTMLElement | null = null;
+  private countrySelect: HTMLSelectElement | null = null;
+
+  // Server-side pagination (browse mode)
+  private country = '';
+  private serverOffset = 0;
+  private serverHasMore = true;
+  private loadingMore = false;
 
   // Sleep timer
   private sleepTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -98,6 +109,7 @@ class Player {
     this.countEl = root.querySelector<HTMLElement>('[data-count]')!;
     this.sentinelEl = root.querySelector<HTMLElement>('[data-sentinel]')!;
     this.viewButtons = root.querySelectorAll<HTMLButtonElement>('.vt-btn');
+    this.countrySelect = root.querySelector<HTMLSelectElement>('[data-country]');
 
     const savedView = localStorage.getItem(VIEW_KEY) as View | null;
     this.view = savedView === 'grid' ? 'grid' : 'list';
@@ -177,8 +189,28 @@ class Player {
 
     if (this.searchEl) this.searchEl.addEventListener('input', () => this.applyFilter());
     this.genreContainer = document.querySelector<HTMLElement>('[data-genres]');
-    this.cityContainer = document.querySelector<HTMLElement>('[data-cities]');
     this.npSongEl = document.querySelector<HTMLElement>('[data-np-song]');
+
+    // Genre filter (delegated, attached once)
+    if (this.genreContainer) {
+      this.genreContainer.addEventListener('click', (e) => {
+        const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-genre]');
+        if (!btn) return;
+        this.activeGenre = btn.dataset.genre || 'all';
+        this.genreContainer!.querySelectorAll('.genre-pill').forEach((b) =>
+          b.classList.toggle('active', (b as HTMLElement).dataset.genre === this.activeGenre)
+        );
+        this.applyFilter();
+      });
+    }
+
+    // Country selector (browse mode)
+    if (this.countrySelect) {
+      this.countrySelect.addEventListener('change', () => {
+        if (this.searchEl) this.searchEl.value = '';
+        void this.loadCountry(this.countrySelect!.value);
+      });
+    }
 
     // Sleep timer
     const sleepToggle = document.querySelector<HTMLButtonElement>('[data-sleep-toggle]');
@@ -216,31 +248,96 @@ class Player {
   async init() {
     try {
       if (this.mode === 'browse') {
-        const res = await fetch(API_STATIONS);
-        if (!res.ok) throw new Error('API ' + res.status);
-        this.all = await res.json();
-      } else if (this.mode === 'favorites') {
-        this.all = getFavorites();
-      } else if (this.mode === 'history') {
-        this.all = getHistory().map((e) => e.station);
+        this.country = localStorage.getItem(COUNTRY_KEY) || '';
+        this.buildCountrySelect();
+        this.showToolbar();
+        this.setupInfiniteScroll();
+        await this.loadCountry(this.country);
+        return;
       }
 
+      this.all = this.mode === 'favorites' ? getFavorites() : getHistory().map((e) => e.station);
       if (this.all.length === 0) {
         this.showEmpty();
         return;
       }
       this.statusEl.style.display = 'none';
-      const toolbar = document.querySelector<HTMLElement>('.player-toolbar');
-      if (toolbar) toolbar.style.display = '';
-      if (this.mode === 'browse') {
-        this.buildGenreFilters();
-        this.buildCityFilters();
-      }
+      this.showToolbar();
       this.applyFilter();
       this.setupInfiniteScroll();
     } catch (err) {
       console.error(err);
-      this.showError('Не успяхме да заредим станциите.');
+      this.showError('We couldn’t load the stations.');
+    }
+  }
+
+  private showToolbar() {
+    const toolbar = document.querySelector<HTMLElement>('.player-toolbar');
+    if (toolbar) toolbar.style.display = '';
+  }
+
+  private buildCountrySelect() {
+    if (!this.countrySelect) return;
+    const opts = ['<option value="">Top stations (worldwide)</option>']
+      .concat(COUNTRIES.map((c) => `<option value="${escapeAttr(c.code)}">${escapeHtml(c.name)}</option>`));
+    this.countrySelect.innerHTML = opts.join('');
+    this.countrySelect.value = this.country;
+  }
+
+  /** Reset and load the first page for a country (empty code = worldwide top). */
+  private async loadCountry(code: string) {
+    this.country = code;
+    try { localStorage.setItem(COUNTRY_KEY, code); } catch { /* ignore */ }
+    this.all = [];
+    this.serverOffset = 0;
+    this.serverHasMore = true;
+    this.activeGenre = 'all';
+    this.current && this.updateActiveCard(null);
+    this.stationCards.clear();
+    this.stationsEl.innerHTML = '';
+    this.sentinelEl.style.display = 'none';
+    this.statusEl.style.display = '';
+    this.statusEl.innerHTML = '<div class="spinner"></div><p>Loading stations…</p>';
+
+    await this.fetchMore();
+
+    this.statusEl.style.display = 'none';
+    if (this.all.length === 0) {
+      this.showEmpty();
+      if (this.genreContainer) this.genreContainer.style.display = 'none';
+      this.filtered = [];
+      this.updateCount();
+      return;
+    }
+    this.buildGenreFilters();
+    this.applyFilter();
+  }
+
+  /** Fetch the next server page for the current country. Returns # of new stations added. */
+  private async fetchMore(): Promise<number> {
+    if (this.mode !== 'browse' || this.loadingMore || !this.serverHasMore) return 0;
+    this.loadingMore = true;
+    try {
+      const params = new URLSearchParams({
+        offset: String(this.serverOffset),
+        limit: String(SERVER_LIMIT),
+      });
+      if (this.country) params.set('country', this.country);
+      const res = await fetch(`${API_STATIONS}?${params}`);
+      if (!res.ok) throw new Error('API ' + res.status);
+      const page: Station[] = await res.json();
+      const seen = new Set(this.all.map((s) => s.stationuuid));
+      const fresh = page.filter((s) => s.stationuuid && !seen.has(s.stationuuid));
+      this.all.push(...fresh);
+      this.serverOffset += page.length;
+      if (page.length < SERVER_LIMIT) this.serverHasMore = false;
+      return fresh.length;
+    } catch (err) {
+      console.error(err);
+      this.serverHasMore = false;
+      return 0;
+    } finally {
+      this.loadingMore = false;
     }
   }
 
@@ -258,25 +355,25 @@ class Player {
       return;
     }
     this.statusEl.style.display = 'none';
-    const toolbar = document.querySelector<HTMLElement>('.player-toolbar');
-    if (toolbar) toolbar.style.display = '';
+    this.showToolbar();
     this.applyFilter();
   }
 
-  private applyFilter() {
+  private recomputeFiltered() {
     const q = this.searchEl ? this.searchEl.value.trim().toLowerCase() : '';
     let list = this.all;
     if (this.activeGenre !== 'all') {
       list = list.filter((s) => this.stationMatchesGenre(s, this.activeGenre));
     }
-    if (this.activeCity !== 'all') {
-      list = list.filter((s) => (s.state || '').toLowerCase() === this.activeCity.toLowerCase());
-    }
     this.filtered = q
       ? list.filter((s) =>
-          s.name.toLowerCase().includes(q) || s.tags.toLowerCase().includes(q)
+          s.name.toLowerCase().includes(q) || (s.tags || '').toLowerCase().includes(q)
         )
       : list;
+  }
+
+  private applyFilter() {
+    this.recomputeFiltered();
     this.rendered = 0;
     this.stationsEl.innerHTML = '';
     this.stationCards.clear();
@@ -286,9 +383,9 @@ class Player {
   }
 
   private stationMatchesGenre(s: Station, genre: string): boolean {
-    const tags = s.tags.toLowerCase();
-    for (const [key, bg] of Object.entries(GENRE_MAP)) {
-      if (bg === genre && tags.includes(key)) return true;
+    const tags = (s.tags || '').toLowerCase();
+    for (const [key, label] of Object.entries(GENRE_MAP)) {
+      if (label === genre && tags.includes(key)) return true;
     }
     return false;
   }
@@ -297,61 +394,29 @@ class Player {
     if (!this.genreContainer) return;
     const genreCounts = new Map<string, number>();
     for (const s of this.all) {
-      const tags = s.tags.toLowerCase();
-      for (const [key, bg] of Object.entries(GENRE_MAP)) {
-        if (tags.includes(key)) {
-          genreCounts.set(bg, (genreCounts.get(bg) || 0) + 1);
-        }
+      const tags = (s.tags || '').toLowerCase();
+      const matched = new Set<string>();
+      for (const [key, label] of Object.entries(GENRE_MAP)) {
+        if (tags.includes(key)) matched.add(label);
+      }
+      for (const label of matched) {
+        genreCounts.set(label, (genreCounts.get(label) || 0) + 1);
       }
     }
     const sorted = [...genreCounts.entries()]
       .filter(([, c]) => c >= 2)
       .sort((a, b) => b[1] - a[1]);
-    if (sorted.length === 0) return;
+    if (sorted.length === 0) {
+      this.genreContainer.style.display = 'none';
+      this.genreContainer.innerHTML = '';
+      return;
+    }
 
     this.genreContainer.style.display = '';
-    this.genreContainer.innerHTML = `<button class="genre-pill active" data-genre="all">Всички</button>`
+    this.genreContainer.innerHTML = '<button class="genre-pill active" data-genre="all">All</button>'
       + sorted.map(([name]) =>
         `<button class="genre-pill" data-genre="${escapeAttr(name)}">${escapeHtml(name)}</button>`
       ).join('');
-    this.genreContainer.addEventListener('click', (e) => {
-      const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-genre]');
-      if (!btn) return;
-      this.activeGenre = btn.dataset.genre || 'all';
-      this.genreContainer!.querySelectorAll('.genre-pill').forEach((b) =>
-        b.classList.toggle('active', (b as HTMLElement).dataset.genre === this.activeGenre)
-      );
-      this.applyFilter();
-    });
-  }
-
-  private buildCityFilters() {
-    if (!this.cityContainer) return;
-    const cityCounts = new Map<string, number>();
-    for (const s of this.all) {
-      const city = (s.state || '').trim();
-      if (city) cityCounts.set(city, (cityCounts.get(city) || 0) + 1);
-    }
-    const sorted = [...cityCounts.entries()]
-      .filter(([, c]) => c >= 2)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 12);
-    if (sorted.length === 0) return;
-
-    this.cityContainer.style.display = '';
-    this.cityContainer.innerHTML = `<button class="genre-pill active" data-city="all">Всички градове</button>`
-      + sorted.map(([name, count]) =>
-        `<button class="genre-pill" data-city="${escapeAttr(name)}">${escapeHtml(name)} (${count})</button>`
-      ).join('');
-    this.cityContainer.addEventListener('click', (e) => {
-      const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-city]');
-      if (!btn) return;
-      this.activeCity = btn.dataset.city || 'all';
-      this.cityContainer!.querySelectorAll('.genre-pill').forEach((b) =>
-        b.classList.toggle('active', (b as HTMLElement).dataset.city === this.activeCity)
-      );
-      this.applyFilter();
-    });
   }
 
   private setSleepTimer(minutes: number) {
@@ -362,7 +427,7 @@ class Player {
     this.sleepEnd = 0;
     const label = document.querySelector<HTMLElement>('[data-sleep-label]');
     if (minutes <= 0) {
-      if (label) label.textContent = 'Таймер';
+      if (label) label.textContent = 'Timer';
       return;
     }
     this.sleepEnd = Date.now() + minutes * 60_000;
@@ -372,9 +437,9 @@ class Player {
     }, minutes * 60_000);
     this.sleepInterval = setInterval(() => {
       const left = Math.max(0, Math.ceil((this.sleepEnd - Date.now()) / 60_000));
-      if (label) label.textContent = `${left} мин`;
+      if (label) label.textContent = `${left} min`;
     }, 10_000);
-    if (label) label.textContent = `${minutes} мин`;
+    if (label) label.textContent = `${minutes} min`;
   }
 
   private startSongPoll() {
@@ -405,11 +470,10 @@ class Player {
   }
 
   private updateCount() {
-    const total = this.all.length;
     const shown = this.filtered.length;
-    const word = this.mode === 'favorites' ? 'любими' : this.mode === 'history' ? 'в дневника' : 'станции';
-    this.countEl.textContent =
-      shown === total ? `${total} ${word}` : `${shown} от ${total} ${word}`;
+    const noun = this.mode === 'favorites' ? 'favorites' : this.mode === 'history' ? 'in history' : 'stations';
+    const more = this.mode === 'browse' && this.serverHasMore ? '+' : '';
+    this.countEl.textContent = `${shown}${more} ${noun}`;
   }
 
   private renderNextBatch() {
@@ -427,7 +491,8 @@ class Player {
     }
     this.stationsEl.appendChild(frag);
     this.rendered += next.length;
-    this.sentinelEl.style.display = this.rendered < this.filtered.length ? '' : 'none';
+    const more = this.rendered < this.filtered.length || (this.mode === 'browse' && this.serverHasMore);
+    this.sentinelEl.style.display = more ? '' : 'none';
     if (this.current && this.state === 'playing') {
       this.updateActiveCard(this.current.stationuuid);
     }
@@ -436,10 +501,20 @@ class Player {
   private setupInfiniteScroll() {
     if (this.observer) this.observer.disconnect();
     this.observer = new IntersectionObserver(
-      (entries) => {
+      async (entries) => {
         for (const e of entries) {
-          if (e.isIntersecting && this.rendered < this.filtered.length) {
+          if (!e.isIntersecting) continue;
+          if (this.rendered < this.filtered.length) {
             this.renderNextBatch();
+          } else if (this.mode === 'browse' && this.serverHasMore && !this.loadingMore) {
+            const added = await this.fetchMore();
+            this.recomputeFiltered();
+            this.updateCount();
+            if (added > 0) {
+              this.renderNextBatch();
+            } else {
+              this.sentinelEl.style.display = this.serverHasMore ? '' : 'none';
+            }
           }
         }
       },
@@ -453,21 +528,23 @@ class Player {
     card.className = 'station';
     card.setAttribute('role', 'button');
     card.tabIndex = 0;
-    const tag = (s.tags.split(',')[0] || s.codec || '').trim();
+    const tag = ((s.tags || '').split(',')[0] || s.codec || '').trim();
     const initial = s.name.charAt(0).toUpperCase();
     const logo = s.favicon
       ? `<img src="${escapeAttr(s.favicon)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'fallback',textContent:'${initial}'}))" />`
       : `<span class="fallback">${initial}</span>`;
     const fav = isFavorite(s.stationuuid);
-    const votes = s.votes > 0 ? `<span class="station-votes" title="${s.votes} гласа">★ ${s.votes}</span>` : '';
+    const votes = s.votes > 0 ? `<span class="station-votes" title="${s.votes} votes">★ ${s.votes}</span>` : '';
     const bitrate = s.bitrate > 0 ? `<span class="station-bitrate">${s.bitrate} kbps</span>` : '';
+    const place = (s.country || '').trim();
+    const placeChip = this.mode === 'browse' && place ? `<span class="station-bitrate">${escapeHtml(place)}</span>` : '';
     card.innerHTML = `
       <div class="station-logo">${logo}</div>
       <div class="station-meta">
         <p class="station-name">${escapeHtml(s.name)}</p>
-        <span class="station-tag-row">${tag ? `<span class="station-tag">${escapeHtml(tag)}</span>` : ''}${bitrate}${votes}</span>
+        <span class="station-tag-row">${tag ? `<span class="station-tag">${escapeHtml(tag)}</span>` : ''}${placeChip}${bitrate}${votes}</span>
       </div>
-      <button class="fav-btn ${fav ? 'active' : ''}" data-fav type="button" aria-label="${fav ? 'Премахни от любими' : 'Добави в любими'}" aria-pressed="${fav}">
+      <button class="fav-btn ${fav ? 'active' : ''}" data-fav type="button" aria-label="${fav ? 'Remove from favorites' : 'Add to favorites'}" aria-pressed="${fav}">
         ${ICON_STAR}
       </button>
     `;
@@ -503,16 +580,17 @@ class Player {
   private showEmpty() {
     const msg =
       this.mode === 'favorites'
-        ? 'Все още нямате любими станции.<br>Натиснете звездичка до станция, за да я запазите.'
+        ? 'You don’t have any favorites yet.<br>Tap the star on a station to save it here.'
         : this.mode === 'history'
-          ? 'Дневникът е празен.<br>Започнете да слушате, за да видите станциите тук.'
-          : 'Няма налични станции.';
+          ? 'Your history is empty.<br>Start listening and stations will appear here.'
+          : 'No stations found for this country.<br>Try another country from the menu above.';
     this.statusEl.style.display = '';
-    this.statusEl.innerHTML = `<p class="empty">${msg}</p>${this.mode !== 'browse' ? '<a class="cta cta-secondary" href="/">Виж всички станции</a>' : ''}`;
+    this.statusEl.innerHTML = `<p class="empty">${msg}</p>${this.mode !== 'browse' ? '<a class="cta cta-secondary" href="/">Browse all stations</a>' : ''}`;
   }
 
   private showError(msg: string) {
-    this.statusEl.innerHTML = `<p>${escapeHtml(msg)}<br>Опитайте отново или проверете интернет връзката си.</p>`;
+    this.statusEl.style.display = '';
+    this.statusEl.innerHTML = `<p>${escapeHtml(msg)}<br>Please try again or check your internet connection.</p>`;
   }
 
   private play(s: Station) {
@@ -581,7 +659,7 @@ class Player {
     this.npName.textContent = s.name;
     this.modalLogo.innerHTML = logoHtml;
     this.modalName.textContent = s.name;
-    this.modalLang.textContent = s.language || s.country || '';
+    this.modalLang.textContent = s.country || s.language || '';
     this.renderTags(s);
     this.refreshFavStars();
     this.updateVoteDisplay(s);
@@ -601,7 +679,7 @@ class Player {
 
   private updateVoteDisplay(s: Station) {
     this.modalVoteCount.textContent = s.votes > 0 ? `★ ${s.votes}` : '';
-    this.modalVoteLabel.textContent = 'Гласувай';
+    this.modalVoteLabel.textContent = 'Vote';
     this.modalVote.disabled = false;
   }
 
@@ -619,22 +697,22 @@ class Player {
       if (data.ok === true) {
         this.current.votes = (this.current.votes || 0) + 1;
         this.modalVoteCount.textContent = `★ ${this.current.votes}`;
-        this.modalVoteLabel.textContent = 'Благодаря!';
+        this.modalVoteLabel.textContent = 'Thanks!';
       } else {
-        this.modalVoteLabel.textContent = data.message || 'Вече сте гласували';
+        this.modalVoteLabel.textContent = data.message || 'Already voted';
       }
     } catch {
-      this.modalVoteLabel.textContent = 'Грешка';
+      this.modalVoteLabel.textContent = 'Error';
     }
     setTimeout(() => {
-      this.modalVoteLabel.textContent = 'Гласувай';
+      this.modalVoteLabel.textContent = 'Vote';
       this.modalVote.disabled = false;
     }, 3000);
   }
 
   private async share() {
     if (!this.current) return;
-    const text = `Слушам ${this.current.name} в Радио България`;
+    const text = `I'm listening to ${this.current.name} on World Radio Stations`;
     const url = window.location.origin;
     const label = document.querySelector<HTMLElement>('[data-share-label]');
     if (navigator.share) {
@@ -642,7 +720,7 @@ class Player {
     } else {
       try {
         await navigator.clipboard.writeText(`${text} — ${url}`);
-        if (label) { label.textContent = 'Копирано!'; setTimeout(() => { label.textContent = 'Сподели'; }, 2000); }
+        if (label) { label.textContent = 'Copied!'; setTimeout(() => { label.textContent = 'Share'; }, 2000); }
       } catch { /* ignore */ }
     }
   }
@@ -655,14 +733,14 @@ class Player {
       if (btn) {
         btn.classList.toggle('active', fav);
         btn.setAttribute('aria-pressed', String(fav));
-        btn.setAttribute('aria-label', fav ? 'Премахни от любими' : 'Добави в любими');
+        btn.setAttribute('aria-label', fav ? 'Remove from favorites' : 'Add to favorites');
       }
     }
     if (this.current) {
       const fav = isFavorite(this.current.stationuuid);
       this.modalFav.classList.toggle('active', fav);
       this.modalFav.setAttribute('aria-pressed', String(fav));
-      this.modalFav.setAttribute('aria-label', fav ? 'Премахни от любими' : 'Добави в любими');
+      this.modalFav.setAttribute('aria-label', fav ? 'Remove from favorites' : 'Add to favorites');
     }
   }
 
@@ -670,18 +748,18 @@ class Player {
     this.state = state;
     const label =
       state === 'playing'
-        ? 'В ЕФИР'
+        ? 'LIVE'
         : state === 'loading'
-          ? 'Зареждане…'
+          ? 'Loading…'
           : state === 'error'
-            ? 'Грешка'
-            : 'ПАУЗА';
+            ? 'Error'
+            : 'PAUSED';
     this.npState.innerHTML = `<span class="dot ${state}"></span>${label}`;
     this.modalState.innerHTML = `<span class="dot ${state}"></span>${label}`;
     const icon = state === 'playing' ? ICON_PAUSE : ICON_PLAY;
     this.npToggle.innerHTML = icon;
     this.modalToggle.innerHTML = icon;
-    const ariaLabel = state === 'playing' ? 'Пауза' : 'Пусни';
+    const ariaLabel = state === 'playing' ? 'Pause' : 'Play';
     this.npToggle.setAttribute('aria-label', ariaLabel);
     this.modalToggle.setAttribute('aria-label', ariaLabel);
     this.modalVu.classList.toggle('animating', state === 'playing');

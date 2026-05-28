@@ -7,7 +7,7 @@ const blog = defineCollection({
     description: z.string(),
     date: z.string(),
     updated: z.string().optional(),
-    author: z.string().default('Радио България'),
+    author: z.string().default('World Radio Stations'),
     tags: z.array(z.string()).default([]),
   }),
 });
@@ -23,8 +23,8 @@ const stations = defineCollection({
     format: z.string(),
     frequencies: z.array(z.string()).default([]),
     website: z.string().optional(),
-    language: z.string().default('български'),
-    country: z.string().default('България'),
+    language: z.string().default('English'),
+    country: z.string().default('United States'),
     slogan: z.string().optional(),
   }),
 });

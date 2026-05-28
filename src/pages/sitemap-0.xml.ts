@@ -2,7 +2,7 @@ import { getCollection } from 'astro:content';
 
 export const prerender = true;
 
-const SITE = 'https://bulgariaradio.com';
+const SITE = 'https://worldradiostations.org';
 
 const staticPages = [
   { loc: '/', changefreq: 'weekly', priority: '1.0' },
@@ -30,7 +30,7 @@ export async function GET() {
     }));
 
   const stationEntries = stations
-    .sort((a, b) => a.data.name.localeCompare(b.data.name, 'bg'))
+    .sort((a, b) => a.data.name.localeCompare(b.data.name, 'en'))
     .map((s) => ({
       loc: `/stations/${s.slug}`,
       lastmod: new Date().toISOString().split('T')[0],

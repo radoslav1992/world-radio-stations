@@ -1,11 +1,11 @@
 {
-  "name": "Радио България",
-  "short_name": "Радио БГ",
+  "name": "World Radio Stations",
+  "short_name": "World Radio",
   "start_url": "/",
   "display": "standalone",
   "theme_color": "#ece5d8",
   "background_color": "#ece5d8",
-  "description": "Слушайте любимите български радио станции на едно място — музика, новини и забавление на живо.",
+  "description": "Listen to thousands of radio stations from around the world in one place — music, news and live entertainment.",
   "icons": [
     {
       "src": "/logo.png",
@@ -19,5 +19,5 @@
     }
   ],
   "categories": ["music", "entertainment"],
-  "lang": "bg"
+  "lang": "en"
 }

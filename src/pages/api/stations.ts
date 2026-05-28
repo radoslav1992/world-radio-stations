@@ -1,33 +1,57 @@
 import type { APIRoute } from 'astro';
 
-export const prerender = true;
+export const prerender = false;
 
-const API_BY_CODE = 'https://de1.api.radio-browser.info/json/stations/bycountrycodeexact/BG';
-const API_BY_NAME = 'https://de1.api.radio-browser.info/json/stations/bycountry/Bulgaria';
-const QUERY = '?limit=2000&hidebroken=true&order=clickcount&reverse=true';
+const HOST = 'https://de1.api.radio-browser.info/json/stations';
+const DEFAULT_LIMIT = 100;
+const MAX_LIMIT = 200;
+const FETCH_HEADERS = { 'User-Agent': 'WorldRadioStations/1.0 (+https://worldradiostations.org)' };
 
-export const GET: APIRoute = async () => {
-  const [r1, r2] = await Promise.all([
-    fetch(API_BY_CODE + QUERY),
-    fetch(API_BY_NAME + QUERY).catch(() => null),
-  ]);
+function clampInt(value: string | null, fallback: number, min: number, max: number): number {
+  const n = parseInt(value ?? '', 10);
+  if (isNaN(n)) return fallback;
+  return Math.min(max, Math.max(min, n));
+}
 
-  const raw1 = r1.ok ? await r1.json() : [];
-  const raw2 = r2 && r2.ok ? await r2.json() : [];
+export const GET: APIRoute = async ({ url }) => {
+  // ISO 3166-1 alpha-2 code, e.g. "US", "GB", "DE". Empty = top stations worldwide.
+  const country = (url.searchParams.get('country') || '').replace(/[^a-zA-Z]/g, '').slice(0, 2).toUpperCase();
+  const offset = clampInt(url.searchParams.get('offset'), 0, 0, 100_000);
+  const limit = clampInt(url.searchParams.get('limit'), DEFAULT_LIMIT, 1, MAX_LIMIT);
 
-  const seenUuid = new Set(raw1.map((s: any) => s.stationuuid));
-  const merged = [...raw1, ...raw2.filter((s: any) => !seenUuid.has(s.stationuuid))];
+  const params = new URLSearchParams({
+    hidebroken: 'true',
+    order: 'clickcount',
+    reverse: 'true',
+    offset: String(offset),
+    limit: String(limit),
+  });
+
+  const endpoint = country
+    ? `${HOST}/bycountrycodeexact/${country}?${params}`
+    : `${HOST}/search?${params}`;
+
+  let raw: any[] = [];
+  try {
+    const res = await fetch(endpoint, { headers: FETCH_HEADERS });
+    if (res.ok) raw = await res.json();
+  } catch {
+    raw = [];
+  }
 
   const seenUrl = new Set<string>();
   const deduped: any[] = [];
-  for (const s of merged) {
-    const url = s.url_resolved;
-    if (!url || !url.startsWith('https://') || seenUrl.has(url)) continue;
-    seenUrl.add(url);
+  for (const s of raw) {
+    const u = s.url_resolved;
+    if (!u || !u.startsWith('https://') || seenUrl.has(u)) continue;
+    seenUrl.add(u);
     deduped.push(s);
   }
 
   return new Response(JSON.stringify(deduped), {
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'public, max-age=300',
+    },
   });
 };
