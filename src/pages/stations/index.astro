@@ -4,22 +4,25 @@ import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import { getCollection } from 'astro:content';
 
 const stations = (await getCollection('stations'))
-  .sort((a, b) => a.data.name.localeCompare(b.data.name, 'bg'));
+  .sort((a, b) => a.data.name.localeCompare(b.data.name, 'en'));
 
-const SITE_URL = 'https://bulgariaradio.com';
+const countries = [...new Set(stations.map((s) => s.data.country).filter(Boolean))]
+  .sort((a, b) => a.localeCompare(b, 'en'));
+
+const SITE_URL = 'https://worldradiostations.org';
 
 const jsonLd = [
   {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
-    name: 'Български радио станции — справочник',
-    description: 'Справочник на българските радио станции — история, формат, честоти и полезна информация.',
-    inLanguage: 'bg',
+    name: 'World radio stations — directory',
+    description: 'A directory of notable radio stations from around the world — history, format, frequencies and useful information.',
+    inLanguage: 'en',
   },
   {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
-    name: 'Български радио станции',
+    name: 'World radio stations',
     numberOfItems: stations.length,
     itemListElement: stations.map((s, i) => ({
       '@type': 'ListItem',
@@ -31,28 +34,36 @@ const jsonLd = [
 ];
 ---
 <Base
-  title="Български радио станции — справочник"
-  description="Подробен справочник на българските радио станции — история, собственост, формат, честоти и програма."
+  title="World radio stations — directory"
+  description="A directory of notable radio stations from around the world — history, ownership, format, frequencies and programming."
   jsonLd={jsonLd}
 >
   <Breadcrumbs crumbs={[
-    { label: 'Начало', href: '/' },
-    { label: 'Станции' },
+    { label: 'Home', href: '/' },
+    { label: 'Stations' },
   ]} />
 
   <section class="container blog-index">
     <div class="section-head">
-      <h1>Български радио станции</h1>
-      <p>Подробен справочник с информация за българските радио станции — история, формат, честоти и програма.</p>
+      <h1>World radio stations</h1>
+      <p>A directory with information about notable radio stations from around the world — history, format, frequencies and programming. Looking for live streams? Use the <a href="/#player">player</a> to browse thousands of stations by country.</p>
     </div>
 
-    <div class="station-directory">
+    <div class="genre-filters" data-station-countries>
+      <button class="genre-pill active" data-country-filter="all" type="button">All countries</button>
+      {countries.map((c) => (
+        <button class="genre-pill" data-country-filter={c} type="button">{c}</button>
+      ))}
+    </div>
+
+    <div class="station-directory" data-station-list>
       {stations.map((station) => (
-        <a href={`/stations/${station.slug}`} class="blog-card">
+        <a href={`/stations/${station.slug}`} class="blog-card" data-country={station.data.country}>
           <div class="blog-card-body">
             <div class="blog-card-tags">
               <span class="tag-chip">{station.data.format}</span>
-              {station.data.founded && <span class="tag-chip">от {station.data.founded}</span>}
+              <span class="tag-chip">{station.data.country}</span>
+              {station.data.founded && <span class="tag-chip">est. {station.data.founded}</span>}
             </div>
             <h2>{station.data.name}</h2>
             <p>{station.data.description}</p>
@@ -63,5 +74,68 @@ const jsonLd = [
         </a>
       ))}
     </div>
+
+    <p class="station-empty" data-station-empty hidden>No stations found for this country.</p>
+
+    <div class="station-pager">
+      <button class="cta cta-secondary" data-station-more type="button" hidden>Load more</button>
+    </div>
   </section>
 </Base>
+
+<script>
+  (() => {
+    const PAGE_SIZE = 9;
+    const list = document.querySelector<HTMLElement>('[data-station-list]');
+    const pills = document.querySelector<HTMLElement>('[data-station-countries]');
+    const moreBtn = document.querySelector<HTMLButtonElement>('[data-station-more]');
+    const emptyMsg = document.querySelector<HTMLElement>('[data-station-empty]');
+    if (!list || !pills || !moreBtn || !emptyMsg) return;
+
+    const cards = Array.from(list.querySelectorAll<HTMLElement>('.blog-card'));
+    let activeCountry = 'all';
+    let shown = PAGE_SIZE;
+
+    function matches(card: HTMLElement): boolean {
+      return activeCountry === 'all' || card.dataset.country === activeCountry;
+    }
+
+    function render() {
+      let visibleCount = 0;
+      let matchTotal = 0;
+      for (const card of cards) {
+        if (matches(card)) {
+          matchTotal++;
+          if (visibleCount < shown) {
+            card.hidden = false;
+            visibleCount++;
+          } else {
+            card.hidden = true;
+          }
+        } else {
+          card.hidden = true;
+        }
+      }
+      emptyMsg.hidden = matchTotal > 0;
+      moreBtn.hidden = visibleCount >= matchTotal;
+    }
+
+    pills.addEventListener('click', (e) => {
+      const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-country-filter]');
+      if (!btn) return;
+      activeCountry = btn.dataset.countryFilter || 'all';
+      shown = PAGE_SIZE;
+      pills.querySelectorAll('.genre-pill').forEach((b) =>
+        b.classList.toggle('active', (b as HTMLElement).dataset.countryFilter === activeCountry)
+      );
+      render();
+    });
+
+    moreBtn.addEventListener('click', () => {
+      shown += PAGE_SIZE;
+      render();
+    });
+
+    render();
+  })();
+</script>

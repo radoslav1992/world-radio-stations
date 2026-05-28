@@ -1,7 +1,8 @@
 ---
 interface Props {
   /**
-   * 'browse'    — fetch all BG stations from Radio Browser API (landing page).
+   * 'browse'    — fetch stations from the Radio Browser API, filterable by
+   *               country with server-side pagination (landing page).
    * 'favorites' — render saved favorites from localStorage.
    * 'history'   — render listen history from localStorage.
    */
@@ -13,24 +14,32 @@ const { mode = 'browse', showSearch = mode === 'browse' } = Astro.props;
 ---
 <div class="player" data-player data-mode={mode}>
   <div class="player-toolbar" style="display:none;">
+    {mode === 'browse' && (
+      <div class="country-filter">
+        <svg class="country-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/>
+        </svg>
+        <select class="country-select" data-country aria-label="Filter stations by country"></select>
+      </div>
+    )}
     {showSearch && (
       <div class="player-search">
         <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>
         </svg>
-        <input type="search" data-search placeholder="Търси станции..." autocomplete="off" />
+        <input type="search" data-search placeholder="Search stations..." autocomplete="off" />
       </div>
     )}
     <span class="count" data-count></span>
-    <div class="view-toggle" role="tablist" aria-label="Вид на списъка">
-      <button class="vt-btn" data-view="list" type="button" role="tab" aria-label="Списък">
+    <div class="view-toggle" role="tablist" aria-label="List view">
+      <button class="vt-btn" data-view="list" type="button" role="tab" aria-label="List">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <line x1="3" y1="6" x2="21" y2="6"/>
           <line x1="3" y1="12" x2="21" y2="12"/>
           <line x1="3" y1="18" x2="21" y2="18"/>
         </svg>
       </button>
-      <button class="vt-btn" data-view="grid" type="button" role="tab" aria-label="Решетка">
+      <button class="vt-btn" data-view="grid" type="button" role="tab" aria-label="Grid">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <rect x="3" y="3" width="7" height="7"/>
           <rect x="14" y="3" width="7" height="7"/>
@@ -42,11 +51,10 @@ const { mode = 'browse', showSearch = mode === 'browse' } = Astro.props;
   </div>
 
   {mode === 'browse' && <div class="genre-filters" data-genres style="display:none;"></div>}
-  {mode === 'browse' && <div class="genre-filters" data-cities style="display:none;"></div>}
 
   <div class="player-loading" data-status>
     {mode === 'browse' && <div class="spinner"></div>}
-    <p>{mode === 'browse' ? 'Зареждане на станции…' : ''}</p>
+    <p>{mode === 'browse' ? 'Loading stations…' : ''}</p>
   </div>
 
   <div class="stations" data-stations></div>
@@ -65,16 +73,16 @@ const { mode = 'browse', showSearch = mode === 'browse' } = Astro.props;
       <div class="np-state" data-np-state></div>
     </div>
   </div>
-  <button class="np-btn np-secondary" data-np-prev type="button" aria-label="Предишна станция">
+  <button class="np-btn np-secondary" data-np-prev type="button" aria-label="Previous station">
     <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zM9.5 12l8.5 6V6z"/></svg>
   </button>
-  <button class="np-btn np-primary" data-np-toggle type="button" aria-label="Пусни">
+  <button class="np-btn np-primary" data-np-toggle type="button" aria-label="Play">
     <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
   </button>
-  <button class="np-btn np-secondary" data-np-next type="button" aria-label="Следваща станция">
+  <button class="np-btn np-secondary" data-np-next type="button" aria-label="Next station">
     <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 6h2v12h-2zM6 18l8.5-6L6 6z"/></svg>
   </button>
-  <button class="np-btn np-expand" data-np-expand type="button" aria-label="Отвори плейъра">
+  <button class="np-btn np-expand" data-np-expand type="button" aria-label="Open player">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <path d="M4 14v6h6M20 10V4h-6M4 20l7-7M20 4l-7 7"/>
     </svg>
@@ -82,19 +90,19 @@ const { mode = 'browse', showSearch = mode === 'browse' } = Astro.props;
 </div>
 
 <!-- Big retro modal -->
-<div class="player-modal" data-modal role="dialog" aria-modal="true" aria-label="Плейър">
+<div class="player-modal" data-modal role="dialog" aria-modal="true" aria-label="Player">
   <div class="modal-radio">
     <header class="modal-head">
-      <button class="modal-icon-btn" data-modal-close type="button" aria-label="Затвори">
+      <button class="modal-icon-btn" data-modal-close type="button" aria-label="Close">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
           <path d="M19 12H5M12 19l-7-7 7-7"/>
         </svg>
       </button>
       <div class="modal-title">
         <span class="brand-dot">❀</span>
-        РАДИО БЪЛГАРИЯ
+        WORLD RADIO
       </div>
-      <button class="modal-icon-btn fav-modal" data-modal-fav type="button" aria-label="Добави в любими" aria-pressed="false">
+      <button class="modal-icon-btn fav-modal" data-modal-fav type="button" aria-label="Add to favorites" aria-pressed="false">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 17.3l-5.4 3.2 1.4-6.1L3 10.4l6.2-.5L12 4l2.8 5.9 6.2.5-5 4 1.4 6.1z"/></svg>
       </button>
     </header>
@@ -132,25 +140,25 @@ const { mode = 'browse', showSearch = mode === 'browse' } = Astro.props;
     <div class="tag-chips" data-modal-tags></div>
 
     <div class="vote-row">
-      <button class="vote-btn" data-modal-vote type="button" aria-label="Гласувай за тази станция">
+      <button class="vote-btn" data-modal-vote type="button" aria-label="Vote for this station">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
-        <span data-vote-label>Гласувай</span>
+        <span data-vote-label>Vote</span>
       </button>
       <span class="vote-count" data-vote-count></span>
-      <button class="vote-btn" data-modal-share type="button" aria-label="Сподели">
+      <button class="vote-btn" data-modal-share type="button" aria-label="Share">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-        <span data-share-label>Сподели</span>
+        <span data-share-label>Share</span>
       </button>
     </div>
 
     <div class="modal-controls">
-      <button class="modal-step-btn" data-modal-prev type="button" aria-label="Предишна станция">
+      <button class="modal-step-btn" data-modal-prev type="button" aria-label="Previous station">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zM9.5 12l8.5 6V6z"/></svg>
       </button>
-      <button class="big-btn" data-modal-toggle type="button" aria-label="Пусни">
+      <button class="big-btn" data-modal-toggle type="button" aria-label="Play">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
       </button>
-      <button class="modal-step-btn" data-modal-next type="button" aria-label="Следваща станция">
+      <button class="modal-step-btn" data-modal-next type="button" aria-label="Next station">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 6h2v12h-2zM6 18l8.5-6L6 6z"/></svg>
       </button>
     </div>
@@ -165,7 +173,7 @@ const { mode = 'browse', showSearch = mode === 'browse' } = Astro.props;
         max="1"
         step="0.01"
         data-modal-volume
-        aria-label="Сила на звука"
+        aria-label="Volume"
       />
       <svg viewBox="0 0 24 24" fill="currentColor" class="vol-icon">
         <path d="M3 10v4h4l5 4V6L7 10H3zm11.5 2c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
@@ -173,16 +181,16 @@ const { mode = 'browse', showSearch = mode === 'browse' } = Astro.props;
     </div>
 
     <div class="sleep-row">
-      <button class="sleep-btn" data-sleep-toggle type="button" aria-label="Таймер за сън">
+      <button class="sleep-btn" data-sleep-toggle type="button" aria-label="Sleep timer">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-        <span data-sleep-label>Таймер</span>
+        <span data-sleep-label>Timer</span>
       </button>
       <div class="sleep-options" data-sleep-options hidden>
-        <button type="button" data-sleep-min="15">15 мин</button>
-        <button type="button" data-sleep-min="30">30 мин</button>
-        <button type="button" data-sleep-min="60">60 мин</button>
-        <button type="button" data-sleep-min="90">90 мин</button>
-        <button type="button" data-sleep-min="0">Изкл.</button>
+        <button type="button" data-sleep-min="15">15 min</button>
+        <button type="button" data-sleep-min="30">30 min</button>
+        <button type="button" data-sleep-min="60">60 min</button>
+        <button type="button" data-sleep-min="90">90 min</button>
+        <button type="button" data-sleep-min="0">Off</button>
       </div>
     </div>
   </div>

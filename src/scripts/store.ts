@@ -22,12 +22,12 @@ export interface HistoryEntry {
   playedAt: number; // ms timestamp
 }
 
-const FAV_KEY = 'br-favorites';
-const HIST_KEY = 'br-history';
+const FAV_KEY = 'wrs-favorites';
+const HIST_KEY = 'wrs-history';
 const MAX_FAVORITES = 200;
 const MAX_HISTORY = 50;
 
-export const STORE_EVENT = 'br:store-changed';
+export const STORE_EVENT = 'wrs:store-changed';
 
 type ChangeKind = 'favorites' | 'history';
 

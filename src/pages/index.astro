@@ -10,81 +10,77 @@ const latestPosts = (await getCollection('blog'))
 
 const features = [
   {
-    title: 'Стотици станции',
-    description: 'Над 100 български радио станции на едно място — поп, рок, фолк, дип хаус, новини, спорт и още.',
+    title: 'Thousands of stations',
+    description: 'Thousands of radio stations from around the world in one place — pop, rock, jazz, news, sports, dance and more.',
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 11h16M4 16h16M9 7l3-3 3 3"/><circle cx="8" cy="16" r="1.5" fill="currentColor"/></svg>',
   },
   {
-    title: 'Любими станции',
-    description: 'Запази любимите си с един клик и им се радвай в собствен раздел. Бърз достъп до това, което слушаш най-често.',
+    title: 'Filter by country',
+    description: 'Pick a country and instantly browse its top stations — from the US and UK to Germany, France, Japan and beyond.',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/></svg>',
+  },
+  {
+    title: 'Favorite stations',
+    description: 'Save the stations you love with one click and find them in their own tab. Quick access to what you listen to most.',
     icon: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 17.3l-5.4 3.2 1.4-6.1L3 10.4l6.2-.5L12 4l2.8 5.9 6.2.5-5 4 1.4 6.1z"/></svg>',
   },
   {
-    title: 'История на слушане',
-    description: 'Виж последно слушаните станции и се върни към тях с едно докосване. Никога не губи интересна станция.',
+    title: 'Listen history',
+    description: 'See the stations you played recently and jump back to them with a single tap. Never lose an interesting station.',
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
   },
   {
-    title: 'Безплатно и просто',
-    description: 'Без регистрация, без абонамент, без скрити такси. Отвори, избери станция, слушай.',
+    title: 'Free and simple',
+    description: 'No registration, no subscription, no hidden fees. Open it, pick a station, listen.',
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg>',
   },
   {
-    title: 'Работи в фон',
-    description: 'Продължава да свири, докато ползваш други приложения или заключиш екрана. Управление от заключения екран.',
+    title: 'Plays in the background',
+    description: 'Keeps playing while you use other apps or lock your screen. Control it right from the lock screen.',
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="3" width="12" height="18" rx="2"/><circle cx="12" cy="17" r="1" fill="currentColor"/></svg>',
-  },
-  {
-    title: 'Малко място',
-    description: 'Приложението е лековато и не товари батерията. Без излишни разрешения.',
-    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M3 12h18"/></svg>',
   },
 ];
 
 const faqs = [
   {
-    q: 'Безплатно ли е?',
-    a: 'Да, напълно безплатно — и уеб плейърът, и бъдещото мобилно приложение. Няма абонамент, няма пробен период, няма скрити такси.',
+    q: 'Is it free?',
+    a: 'Yes, completely free — both the web player and the upcoming mobile app. No subscription, no trial period, no hidden fees.',
   },
   {
-    q: 'Откъде идват радио станциите?',
-    a: 'Каталогът се захранва от Radio Browser — отворена, общностно поддържана база данни с радио станции от целия свят. Самите потоци се излъчват от съответните радиа.',
+    q: 'Where do the radio stations come from?',
+    a: 'The catalog is powered by Radio Browser — an open, community-maintained database of radio stations from all over the world. The streams themselves are broadcast by the respective stations.',
   },
   {
-    q: 'Трябва ли да създавам акаунт?',
-    a: 'Не. Просто отворете сайта и започнете да слушате. Любимите станции и историята се пазят локално в браузъра ви.',
+    q: 'Do I need to create an account?',
+    a: 'No. Just open the site and start listening. Your favorite stations and history are stored locally in your browser.',
   },
   {
-    q: 'Колко мобилни данни ползва?',
-    a: 'Типично 60–120 MB на час, в зависимост от качеството на потока (повечето български станции излъчват на 96–128 kbps). При свързване с Wi-Fi не се изразходват мобилни данни.',
+    q: 'How do I filter stations by country?',
+    a: 'Use the country selector above the player. Pick any country and the list reloads with that country’s most popular stations, loading more as you scroll. Choose “Top stations (worldwide)” to see the most popular stations globally.',
   },
   {
-    q: 'Защо някои станции не свирят?',
-    a: 'Браузърът блокира потоци без HTTPS и без поддръжка на HLS. Затова в уеб версията виждате по-малък подсет от станциите. Бъдещото Android приложение ще поддържа всички формати.',
+    q: 'How much mobile data does it use?',
+    a: 'Typically 60–120 MB per hour, depending on the stream quality (most stations broadcast at 96–192 kbps). When connected to Wi-Fi, no mobile data is used.',
   },
   {
-    q: 'Работи ли извън България?',
-    a: 'Да, приложението работи навсякъде, където има интернет. Идеално за българи в чужбина, които искат да чуят родното радио.',
+    q: 'Why do some stations not play?',
+    a: 'Browsers block non-HTTPS streams and streams without HLS support. That’s why the web version shows a smaller subset of stations. The upcoming Android app will support all formats.',
   },
   {
-    q: 'Достъпно ли е за iOS / iPhone?',
-    a: 'Мобилно приложение все още няма — работим първо по Android версията. Уеб версията на този сайт обаче работи във всеки модерен браузър, включително Safari на iOS.',
+    q: 'Does it work everywhere?',
+    a: 'Yes, the app works anywhere you have an internet connection. It’s perfect for listening to stations from your home country while travelling or living abroad.',
   },
   {
-    q: 'Каква е разликата между FM радио и интернет радио?',
-    a: 'FM радиото използва радиочестоти и приемник, а интернет радиото предава звука като цифров поток през интернет. Онлайн стрийминг означава по-широк избор от станции, метаданни за песните и достъп от всяка точка на света.',
+    q: 'Is it available for iOS / iPhone?',
+    a: 'There is no mobile app yet — we’re working on the Android version first. The web version on this site, however, works in any modern browser, including Safari on iOS.',
   },
   {
-    q: 'Мога ли да слушам радио без интернет?',
-    a: 'За интернет радиото е необходима интернет връзка — мобилни данни или Wi-Fi. Ако искате да слушате офлайн, единствената алтернатива засега е класическо FM радио с физически приемник.',
+    q: 'What’s the difference between FM radio and internet radio?',
+    a: 'FM radio uses radio frequencies and a receiver, while internet radio delivers audio as a digital stream over the internet. Online streaming means a much wider choice of stations, song metadata and access from anywhere in the world.',
   },
   {
-    q: 'Как мога да добавя станция, която липсва?',
-    a: 'Каталогът се захранва от Radio Browser — отворена общностна база данни. Можете да предложите нова станция директно на radio-browser.info или да ни пишете през страницата за контакт с URL на потока.',
-  },
-  {
-    q: 'Безопасно ли е за деца?',
-    a: 'Сайтът е предназначен за потребители на 13+ години. Самото съдържание на радиостанциите е на живо и не се контролира от нас — препоръчваме родителски контрол при по-малки деца.',
+    q: 'How can I add a station that’s missing?',
+    a: 'The catalog is powered by Radio Browser — an open, community database. You can submit a new station directly at radio-browser.info, or write to us via the contact page with the stream URL.',
   },
 ];
 
@@ -92,12 +88,12 @@ const jsonLd = [
   {
     '@context': 'https://schema.org',
     '@type': 'WebApplication',
-    name: 'Радио България',
+    name: 'World Radio Stations',
     browserRequirements: 'Requires a modern browser with HTML5 audio support',
     applicationCategory: 'MultimediaApplication',
-    description: 'Безплатен уеб плейър за български радио станции онлайн. Android приложение — очаквайте скоро.',
-    inLanguage: 'bg',
-    offers: { '@type': 'Offer', price: '0', priceCurrency: 'BGN' },
+    description: 'Free web player for thousands of radio stations from around the world, filterable by country. Android app coming soon.',
+    inLanguage: 'en',
+    offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
   },
   {
     '@context': 'https://schema.org',
@@ -111,58 +107,58 @@ const jsonLd = [
   {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
-    name: 'Радио България',
-    url: 'https://bulgariaradio.com',
-    inLanguage: 'bg',
+    name: 'World Radio Stations',
+    url: 'https://worldradiostations.org',
+    inLanguage: 'en',
     potentialAction: {
       '@type': 'SearchAction',
-      target: 'https://bulgariaradio.com/#player',
+      target: 'https://worldradiostations.org/#player',
       'query-input': 'required name=search_term_string',
     },
   },
 ];
 ---
 <Base
-  title="Радио България — Български радио станции онлайн"
-  description="Слушай безплатно над 100 български радио станции — поп, рок, фолк, дип хаус, новини. Директно в браузъра, без регистрация. Android приложение — очаквайте скоро."
+  title="World Radio Stations — Listen to radio from around the world online"
+  description="Listen to thousands of radio stations from around the world for free — pop, rock, jazz, news and more. Filter by country, right in your browser, no sign-up. Android app coming soon."
   jsonLd={jsonLd}
 >
   <section class="hero container">
-    <img class="hero-logo" src="/logo.png" alt="Радио България — лого" width="160" height="160" />
-    <h1>Радио България</h1>
+    <img class="hero-logo" src="/logo.png" alt="World Radio Stations — logo" width="160" height="160" />
+    <h1>World Radio Stations</h1>
     <p class="tagline">
-      Слушай безплатно над 100 български радио станции — поп, рок, фолк, дип хаус, новини и още.
-      Директно в браузъра, без регистрация.
+      Listen to thousands of radio stations from around the world for free — pop, rock, jazz, news and more.
+      Filter by country, right in your browser, no sign-up.
     </p>
     <div class="hero-ctas">
       <a class="cta" href="#player">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-        Слушай онлайн
+        Listen online
       </a>
       <span class="cta cta-coming-soon" id="download">
         <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 20.5V3.5c0-.6.3-1.1.8-1.4L13.5 12 3.8 21.9c-.5-.3-.8-.8-.8-1.4zm10.6-8.5l2.5-2.5L5.5 3.4c-.3-.2-.6-.3-.9-.3l9 8.9zm6.5-3.7L17.5 9.7l-2.7 2.3 2.7 2.3 2.6-1.4c.8-.5.8-1.7 0-2.1zM4.6 20.9c.3 0 .6-.1.9-.3l10.6-6.1-2.5-2.5-9 8.9z"/></svg>
-        Android — очаквайте скоро
+        Android — coming soon
       </span>
     </div>
-    <ul class="trust-row" aria-label="Кратки факти">
-      <li><strong>100+</strong> станции</li>
-      <li><strong>0 лв</strong> безплатно</li>
-      <li><strong>Без</strong> регистрация</li>
+    <ul class="trust-row" aria-label="Quick facts">
+      <li><strong>1000s</strong> of stations</li>
+      <li><strong>$0</strong> free</li>
+      <li><strong>No</strong> sign-up</li>
     </ul>
   </section>
 
   <section id="player" class="container player-section">
     <div class="section-head">
-      <h2>Слушай на живо</h2>
-      <p>Истински български радио станции, директно в браузъра — без инсталация, без регистрация.</p>
+      <h2>Listen live</h2>
+      <p>Real radio stations from around the world, right in your browser — no install, no sign-up.</p>
     </div>
     <RadioPlayer />
   </section>
 
   <section id="features" class="container">
     <div class="section-head">
-      <h2>Защо Радио България</h2>
-      <p>Всичко необходимо, за да слушаш българско радио — без излишни функции.</p>
+      <h2>Why World Radio Stations</h2>
+      <p>Everything you need to listen to radio from anywhere — without the clutter.</p>
     </div>
     <div class="features features-six">
       {features.map((f) => <Feature title={f.title} description={f.description} icon={f.icon} />)}
@@ -171,40 +167,40 @@ const jsonLd = [
 
   <section class="container">
     <div class="section-head">
-      <h2>Така изглежда приложението</h2>
-      <p>Просто, чисто и в твоя стил.</p>
+      <h2>What the app looks like</h2>
+      <p>Simple, clean and easy on the eyes.</p>
     </div>
     <div class="screenshots">
-      <img src="/screenshots/home.png" alt="Списък с български радио станции" loading="lazy" width="1080" height="2404" />
-      <img src="/screenshots/favorites.png" alt="Любими станции" loading="lazy" width="1080" height="2404" />
-      <img src="/screenshots/history.png" alt="История на слушане" loading="lazy" width="1080" height="2404" />
-      <img src="/screenshots/player.png" alt="Ретро плейър със зелен скалател" loading="lazy" width="1080" height="2404" />
+      <img src="/screenshots/home.png" alt="List of radio stations" loading="lazy" width="1080" height="2404" />
+      <img src="/screenshots/favorites.png" alt="Favorite stations" loading="lazy" width="1080" height="2404" />
+      <img src="/screenshots/history.png" alt="Listen history" loading="lazy" width="1080" height="2404" />
+      <img src="/screenshots/player.png" alt="Retro player with a green dial" loading="lazy" width="1080" height="2404" />
     </div>
   </section>
 
   <section class="container about-strip">
     <div class="section-head">
-      <h2>Кратко за нас</h2>
+      <h2>About us</h2>
     </div>
     <div class="prose">
       <p>
-        Радио България е малък независим проект, чиято цел е да направи родното радио лесно достъпно
-        — на всяко устройство, навсякъде по света. Приложението е направено от любители на българската
-        музика и не е свързано с конкретна радиостанция или медийна група.
+        World Radio Stations is a small independent project with one goal: to make radio from
+        anywhere in the world easy to reach — on any device, wherever you are. It’s built by
+        people who love radio and is not affiliated with any particular station or media group.
       </p>
       <p>
-        Каталогът се захранва от <a href="https://www.radio-browser.info" target="_blank" rel="noopener noreferrer">Radio Browser</a>
-        — отворена, общностно поддържана база данни. Самото съдържание (музика, новини, реклами)
-        принадлежи на съответните радиа.
+        The catalog is powered by <a href="https://www.radio-browser.info" target="_blank" rel="noopener noreferrer">Radio Browser</a>
+        — an open, community-maintained database. The content itself (music, news, ads)
+        belongs to the respective stations.
       </p>
-      <p><a class="link-arrow" href="/about">Прочети повече за проекта →</a></p>
+      <p><a class="link-arrow" href="/about">Read more about the project →</a></p>
     </div>
   </section>
 
   <section class="container">
     <div class="section-head">
-      <h2>От блога</h2>
-      <p>Статии за българското радио, музика и полезни съвети.</p>
+      <h2>From the blog</h2>
+      <p>Articles about radio around the world, music and useful tips.</p>
     </div>
     <div class="blog-grid blog-grid-home">
       {latestPosts.map((post) => (
@@ -222,14 +218,14 @@ const jsonLd = [
       ))}
     </div>
     <div style="text-align:center; margin-top:1.5rem;">
-      <a class="link-arrow" href="/blog">Всички статии →</a>
+      <a class="link-arrow" href="/blog">All articles →</a>
     </div>
   </section>
 
   <section id="faq" class="container">
     <div class="section-head">
-      <h2>Често задавани въпроси</h2>
-      <p>Кратки отговори на най-честите въпроси за приложението.</p>
+      <h2>Frequently asked questions</h2>
+      <p>Quick answers to the most common questions about the app.</p>
     </div>
     <div class="faq">
       {faqs.map((f) => (
@@ -242,16 +238,16 @@ const jsonLd = [
   </section>
 
   <section class="container cta-section">
-    <h2>Готов за слушане?</h2>
-    <p>Пуснете любимата си станция директно в браузъра — безплатно и без регистрация.</p>
+    <h2>Ready to listen?</h2>
+    <p>Play your favorite station right in your browser — free and without sign-up.</p>
     <div class="hero-ctas">
       <a class="cta" href="#player">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-        Слушай онлайн
+        Listen online
       </a>
       <span class="cta cta-coming-soon">
         <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 20.5V3.5c0-.6.3-1.1.8-1.4L13.5 12 3.8 21.9c-.5-.3-.8-.8-.8-1.4zm10.6-8.5l2.5-2.5L5.5 3.4c-.3-.2-.6-.3-.9-.3l9 8.9zm6.5-3.7L17.5 9.7l-2.7 2.3 2.7 2.3 2.6-1.4c.8-.5.8-1.7 0-2.1zM4.6 20.9c.3 0 .6-.1.9-.3l10.6-6.1-2.5-2.5-9 8.9z"/></svg>
-        Android — очаквайте скоро
+        Android — coming soon
       </span>
     </div>
   </section>
