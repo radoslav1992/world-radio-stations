@@ -514,7 +514,7 @@ footer.site .footer-credit a:hover { color: var(--gold); }
   gap: 8px;
 }
 .stations.view-list {
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .station {
@@ -526,6 +526,7 @@ footer.site .footer-credit a:hover { color: var(--gold); }
   font-family: var(--font-sans);
   display: flex;
   text-align: left;
+  min-width: 0;
 }
 .station:hover {
   border-color: var(--border-strong);
@@ -630,13 +631,19 @@ footer.site .footer-credit a:hover { color: var(--gold); }
   white-space: nowrap;
   text-overflow: ellipsis;
   flex: 1;
+  min-width: 0;
 }
 .stations.view-list .station-tag-row {
   flex-shrink: 0;
+  max-width: 55%;
 }
 .stations.view-list .station-tag {
   font-size: 0.65rem;
-  flex-shrink: 0;
+  flex-shrink: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .stations.view-list .fav-btn { margin-left: auto; }
 
