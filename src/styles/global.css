@@ -393,6 +393,99 @@ footer.site .footer-credit a:hover { color: var(--gold); }
   padding: 2rem 1rem;
 }
 
+/* Verified-working badge on station cards */
+.station-verified {
+  display: inline-block;
+  margin-left: 0.4rem;
+  color: var(--bg-green);
+  font-size: 0.8em;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+/* Song-discovery: "find this song" links in the modal */
+.song-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.4rem 0 0.2rem;
+}
+.song-actions-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--dial-green-bright);
+  opacity: 0.85;
+}
+.song-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.7rem;
+  border: 1px solid var(--dial-green-bright);
+  border-radius: 999px;
+  color: var(--dial-green-bright);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-decoration: none;
+  background: rgba(0,0,0,0.15);
+  transition: background 0.15s, color 0.15s;
+}
+.song-link:hover { background: var(--dial-green-bright); color: #04241a; }
+
+/* Alarm time input */
+.alarm-options input[type="time"] {
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  padding: 0.3rem 0.5rem;
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  background: var(--bg-elev);
+  color: var(--text);
+}
+
+/* Songs heard page */
+.songs-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.song-log {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.song-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.7rem 0.9rem;
+}
+.song-info { min-width: 0; }
+.song-title {
+  margin: 0;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.song-meta { margin: 0.1rem 0 0; font-size: 0.8rem; color: var(--text-muted); }
+.song-links { display: flex; gap: 0.4rem; flex-shrink: 0; }
+.song-links .song-link {
+  border-color: var(--gold-deep);
+  color: var(--gold-deep);
+  background: transparent;
+}
+.song-links .song-link:hover { background: var(--gold); border-color: var(--gold); color: #fff; }
+.song-empty { text-align: center; padding: 2rem 1rem; }
+
 /* ------------ Player ------------ */
 .player {
   background: var(--bg-card);

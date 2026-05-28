@@ -144,6 +144,11 @@ if (tags) rootAttrs['data-tags'] = tags;
       <div class="dial-needle" aria-hidden="true"></div>
       <div class="dial-name" data-modal-name></div>
       <div class="dial-song" data-modal-song></div>
+      <div class="song-actions" data-song-actions hidden>
+        <span class="song-actions-label">Find this song</span>
+        <a class="song-link" data-song-spotify href="#" target="_blank" rel="noopener noreferrer">Spotify</a>
+        <a class="song-link" data-song-youtube href="#" target="_blank" rel="noopener noreferrer">YouTube</a>
+      </div>
       <div class="dial-lang" data-modal-lang></div>
     </div>
 
@@ -217,6 +222,18 @@ if (tags) rootAttrs['data-tags'] = tags;
         <button type="button" data-sleep-min="60">60 min</button>
         <button type="button" data-sleep-min="90">90 min</button>
         <button type="button" data-sleep-min="0">Off</button>
+      </div>
+    </div>
+
+    <div class="sleep-row alarm-row">
+      <button class="sleep-btn" data-alarm-toggle type="button" aria-label="Alarm">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v5l3 2"/><circle cx="12" cy="13" r="8"/><path d="M5 3 2 6M22 6l-3-3"/></svg>
+        <span data-alarm-label>Alarm</span>
+      </button>
+      <div class="sleep-options alarm-options" data-alarm-options hidden>
+        <input type="time" data-alarm-input aria-label="Alarm time" />
+        <button type="button" data-alarm-set>Set</button>
+        <button type="button" data-alarm-clear>Off</button>
       </div>
     </div>
   </div>
