@@ -96,11 +96,10 @@ const jsonLd = [
     let activeCountry = 'all';
     let shown = PAGE_SIZE;
 
-    function matches(card: HTMLElement): boolean {
-      return activeCountry === 'all' || card.dataset.country === activeCountry;
-    }
+    const matches = (card: HTMLElement): boolean =>
+      activeCountry === 'all' || card.dataset.country === activeCountry;
 
-    function render() {
+    const render = () => {
       let visibleCount = 0;
       let matchTotal = 0;
       for (const card of cards) {
@@ -118,7 +117,7 @@ const jsonLd = [
       }
       emptyMsg.hidden = matchTotal > 0;
       moreBtn.hidden = visibleCount >= matchTotal;
-    }
+    };
 
     pills.addEventListener('click', (e) => {
       const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-country-filter]');
