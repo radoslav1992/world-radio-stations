@@ -1,0 +1,58 @@
+---
+import Base from '../../layouts/Base.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import RadioPlayer from '../../components/RadioPlayer.astro';
+import { MOODS } from '../../data/moods';
+
+export function getStaticPaths() {
+  return MOODS.map((m) => ({ params: { mood: m.slug }, props: { mood: m } }));
+}
+
+const { mood } = Astro.props;
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: `${mood.heading} — World Radio Stations`,
+  description: mood.intro,
+  inLanguage: 'en',
+};
+
+const otherMoods = MOODS.filter((m) => m.slug !== mood.slug);
+---
+<Base
+  title={`${mood.heading} — listen online free`}
+  description={`${mood.intro} Free streaming radio at World Radio Stations.`}
+  jsonLd={jsonLd}
+>
+  <Breadcrumbs crumbs={[
+    { label: 'Home', href: '/' },
+    { label: 'Discover', href: '/moods' },
+    { label: mood.title },
+  ]} />
+
+  <section class="container listen-head">
+    <p class="listen-eyebrow"><span aria-hidden="true">{mood.emoji}</span> Mood</p>
+    <h1>{mood.heading}</h1>
+    <p class="page-sub">{mood.intro}</p>
+  </section>
+
+  <section class="container player-section">
+    <RadioPlayer tags={mood.tag} />
+  </section>
+
+  <section class="container">
+    <div class="section-head">
+      <h2>More moods</h2>
+    </div>
+    <div class="mood-grid">
+      {otherMoods.map((m) => (
+        <a href={`/moods/${m.slug}`} class="mood-card">
+          <span class="mood-emoji" aria-hidden="true">{m.emoji}</span>
+          <h2>{m.title}</h2>
+          <p>{m.blurb}</p>
+        </a>
+      ))}
+    </div>
+  </section>
+</Base>

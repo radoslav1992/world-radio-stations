@@ -136,6 +136,7 @@ const jsonLdArr = [orgJsonLd, ...(jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [js
         </button>
         <nav class="site" id="main-nav">
           <a href="/" class:list={{ active: isActive('/') }}>Listen</a>
+          <a href="/moods" class:list={{ active: path.startsWith('/moods') }}>Discover</a>
           <a href="/favorites" class:list={{ active: isActive('/favorites') }}>Favorites</a>
           <a href="/history" class:list={{ active: isActive('/history') }}>History</a>
           <a href="/stations" class:list={{ active: path.startsWith('/stations') }}>Stations</a>
@@ -162,6 +163,7 @@ const jsonLdArr = [orgJsonLd, ...(jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [js
         <div class="footer-col">
           <h4>App</h4>
           <a href="/">Listen online</a>
+          <a href="/moods">Discover by mood</a>
           <a href="/favorites">Favorites</a>
           <a href="/history">History</a>
         </div>

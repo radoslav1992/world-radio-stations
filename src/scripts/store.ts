@@ -12,6 +12,7 @@ export interface Station {
   bitrate: number;
   hls: number;
   country: string;
+  countrycode: string;
   state: string;
   language: string;
   votes: number;

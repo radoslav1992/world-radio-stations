@@ -1,0 +1,75 @@
+---
+import Base from '../../layouts/Base.astro';
+import RadioPlayer from '../../components/RadioPlayer.astro';
+
+export const prerender = false;
+
+const { uuid } = Astro.params;
+const BY_UUID = 'https://de1.api.radio-browser.info/json/stations/byuuid/';
+const FETCH_HEADERS = { 'User-Agent': 'WorldRadioStations/1.0 (+https://worldradiostations.org)' };
+
+let station: any = null;
+if (uuid && /^[a-fA-F0-9-]{8,64}$/.test(uuid)) {
+  try {
+    const res = await fetch(BY_UUID + encodeURIComponent(uuid), { headers: FETCH_HEADERS });
+    if (res.ok) {
+      const list = await res.json();
+      const s = Array.isArray(list) ? list[0] : null;
+      if (s && typeof s.url_resolved === 'string' && s.url_resolved.startsWith('https://')) station = s;
+    }
+  } catch {
+    station = null;
+  }
+}
+
+if (!station) {
+  return Astro.redirect('/404');
+}
+
+const name = (station.name || 'Radio station').trim();
+const country = (station.country || '').trim();
+const tags = (station.tags || '')
+  .split(',')
+  .map((t: string) => t.trim())
+  .filter(Boolean)
+  .slice(0, 4);
+const meta = [country, tags.join(', ')].filter(Boolean).join(' · ');
+const description = `Listen to ${name} live online${meta ? ` — ${meta}` : ''}. Free streaming radio at World Radio Stations.`;
+const ogImage = typeof station.favicon === 'string' && station.favicon.startsWith('https://') ? station.favicon : '/logo.png';
+const countryCode = (station.countrycode || '').toUpperCase();
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'RadioStation',
+  name,
+  description,
+  ...(station.homepage ? { url: station.homepage } : {}),
+  ...(country ? { areaServed: { '@type': 'Country', name: country } } : {}),
+  inLanguage: station.language || 'en',
+  mainEntityOfPage: {
+    '@type': 'WebPage',
+    '@id': `https://worldradiostations.org/listen/${station.stationuuid}`,
+  },
+};
+---
+<Base
+  title={`${name} — Listen live`}
+  description={description}
+  ogImage={ogImage}
+  jsonLd={jsonLd}
+>
+  <section class="container listen-head">
+    <p class="listen-eyebrow">Now playing</p>
+    <h1>{name}</h1>
+    <p class="page-sub">{meta || 'Live radio stream'}</p>
+    {station.homepage && (
+      <p class="listen-links">
+        <a href={station.homepage} target="_blank" rel="noopener noreferrer">Official site ↗</a>
+      </p>
+    )}
+  </section>
+
+  <section class="container player-section">
+    <RadioPlayer autoplay={station.stationuuid} countryDefault={countryCode} />
+  </section>
+</Base>

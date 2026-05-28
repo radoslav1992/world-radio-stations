@@ -16,6 +16,8 @@ function clampInt(value: string | null, fallback: number, min: number, max: numb
 export const GET: APIRoute = async ({ url }) => {
   // ISO 3166-1 alpha-2 code, e.g. "US", "GB", "DE". Empty = top stations worldwide.
   const country = (url.searchParams.get('country') || '').replace(/[^a-zA-Z]/g, '').slice(0, 2).toUpperCase();
+  // Comma-separated tag list for mood/genre discovery, e.g. "ambient,chillout".
+  const tags = (url.searchParams.get('tags') || '').replace(/[^a-zA-Z0-9 ,&-]/g, '').slice(0, 120);
   const offset = clampInt(url.searchParams.get('offset'), 0, 0, 100_000);
   const limit = clampInt(url.searchParams.get('limit'), DEFAULT_LIMIT, 1, MAX_LIMIT);
 
@@ -27,9 +29,16 @@ export const GET: APIRoute = async ({ url }) => {
     limit: String(limit),
   });
 
-  const endpoint = country
-    ? `${HOST}/bycountrycodeexact/${country}?${params}`
-    : `${HOST}/search?${params}`;
+  let endpoint: string;
+  if (tags) {
+    params.set('tagList', tags);
+    if (country) params.set('countrycode', country);
+    endpoint = `${HOST}/search?${params}`;
+  } else if (country) {
+    endpoint = `${HOST}/bycountrycodeexact/${country}?${params}`;
+  } else {
+    endpoint = `${HOST}/search?${params}`;
+  }
 
   let raw: any[] = [];
   try {

@@ -9,12 +9,32 @@ interface Props {
   mode?: 'browse' | 'favorites' | 'history';
   /** Whether to show the search input. Defaults to true for browse, false otherwise. */
   showSearch?: boolean;
+  /** Station UUID to auto-cue on load (deep links / share links). */
+  autoplay?: string;
+  /** ISO country code to preselect in the country filter. */
+  countryDefault?: string;
+  /** Comma-separated tag list — loads a mood/genre collection across countries. */
+  tags?: string;
+  /** Whether to render the country filter. Hidden for tag-based mood pages. */
+  showCountry?: boolean;
 }
-const { mode = 'browse', showSearch = mode === 'browse' } = Astro.props;
+const {
+  mode = 'browse',
+  showSearch = mode === 'browse',
+  autoplay,
+  countryDefault,
+  tags,
+  showCountry = mode === 'browse' && !tags,
+} = Astro.props;
+
+const rootAttrs: Record<string, string> = {};
+if (autoplay) rootAttrs['data-autoplay'] = autoplay;
+if (countryDefault) rootAttrs['data-country-default'] = countryDefault;
+if (tags) rootAttrs['data-tags'] = tags;
 ---
-<div class="player" data-player data-mode={mode}>
+<div class="player" data-player data-mode={mode} {...rootAttrs}>
   <div class="player-toolbar" style="display:none;">
-    {mode === 'browse' && (
+    {showCountry && (
       <div class="country-filter">
         <svg class="country-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
           <circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/>
@@ -29,6 +49,14 @@ const { mode = 'browse', showSearch = mode === 'browse' } = Astro.props;
         </svg>
         <input type="search" data-search placeholder="Search stations..." autocomplete="off" />
       </div>
+    )}
+    {mode === 'browse' && (
+      <button class="surprise-btn" data-surprise type="button" aria-label="Play a random station">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.3" fill="currentColor"/><circle cx="16" cy="16" r="1.3" fill="currentColor"/><circle cx="16" cy="8" r="1.3" fill="currentColor"/><circle cx="8" cy="16" r="1.3" fill="currentColor"/>
+        </svg>
+        <span>Surprise me</span>
+      </button>
     )}
     <span class="count" data-count></span>
     <div class="view-toggle" role="tablist" aria-label="List view">

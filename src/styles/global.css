@@ -344,6 +344,49 @@ footer.site .footer-credit a:hover { color: var(--gold); }
   justify-content: center;
   margin-top: 1.5rem;
 }
+
+/* Mood / discovery */
+.mood-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+}
+.mood-card {
+  display: block;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.4rem;
+  text-decoration: none;
+  color: var(--text);
+  transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.mood-card:hover {
+  border-color: var(--border-strong);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.07);
+}
+.mood-emoji { font-size: 1.8rem; line-height: 1; display: block; margin-bottom: 0.5rem; }
+.mood-card h2 { font-size: 1.2rem; margin: 0 0 0.35rem; color: var(--gold); }
+.mood-card p { margin: 0; color: var(--text-muted); font-size: 0.92rem; }
+
+.listen-head {
+  padding: 2.5rem 0 0.5rem;
+  text-align: center;
+}
+.listen-eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--gold);
+  margin: 0 0 0.5rem;
+}
+.listen-head h1 { margin: 0 0 0.5rem; }
+.listen-head .page-sub { max-width: 640px; margin: 0 auto; }
+.listen-links { margin-top: 0.75rem; }
+.listen-links a { color: var(--gold); text-decoration: none; font-weight: 600; }
 .station-empty {
   text-align: center;
   color: var(--text-muted);
@@ -435,6 +478,24 @@ footer.site .footer-credit a:hover { color: var(--gold); }
   cursor: pointer;
   max-width: 200px;
 }
+.surprise-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.8rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: border-color 0.15s, color 0.15s;
+}
+.surprise-btn:hover { border-color: var(--gold); color: var(--gold); }
+.surprise-btn svg { width: 16px; height: 16px; }
 .player-search {
   flex: 1;
   display: flex;
