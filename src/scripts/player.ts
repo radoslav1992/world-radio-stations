@@ -10,6 +10,7 @@ import {
 import { COUNTRIES } from './countries';
 
 const API_STATIONS = '/api/stations';
+const API_STATION = '/api/station';
 const API_VOTE = '/api/vote';
 const API_NOW_PLAYING = '/api/now-playing';
 const STORAGE_KEY = 'wrs-last-station';
@@ -60,6 +61,9 @@ class Player {
   private genreContainer: HTMLElement | null = null;
   private countrySelect: HTMLSelectElement | null = null;
   private country = '';
+  private tags = '';
+  private autoplayUuid = '';
+  private forcedCountry: string | null = null;
   private loadToken = 0;
 
   // Sleep timer
@@ -109,6 +113,12 @@ class Player {
     this.pagerEl = root.querySelector<HTMLElement>('[data-pager]');
     this.viewButtons = root.querySelectorAll<HTMLButtonElement>('.vt-btn');
     this.countrySelect = root.querySelector<HTMLSelectElement>('[data-country]');
+
+    this.tags = root.dataset.tags || '';
+    this.forcedCountry = root.dataset.countryDefault ?? null;
+    this.autoplayUuid = root.dataset.autoplay
+      || new URLSearchParams(window.location.search).get('play')
+      || '';
 
     const savedView = localStorage.getItem(VIEW_KEY) as View | null;
     this.view = savedView === 'grid' ? 'grid' : 'list';
@@ -220,6 +230,10 @@ class Player {
       });
     }
 
+    // Surprise me — play a random station from the loaded set
+    const surpriseBtn = root.querySelector<HTMLButtonElement>('[data-surprise]');
+    if (surpriseBtn) surpriseBtn.addEventListener('click', () => this.surprise());
+
     // Sleep timer
     const sleepToggle = document.querySelector<HTMLButtonElement>('[data-sleep-toggle]');
     const sleepOptions = document.querySelector<HTMLElement>('[data-sleep-options]');
@@ -256,10 +270,16 @@ class Player {
   async init() {
     try {
       if (this.mode === 'browse') {
-        this.country = localStorage.getItem(COUNTRY_KEY) || '';
-        this.buildCountrySelect();
         this.showToolbar();
-        await this.loadCountry(this.country);
+        if (this.tags) {
+          // Mood/genre collection across countries — no country selector.
+          await this.load();
+        } else {
+          this.country = this.forcedCountry ?? (localStorage.getItem(COUNTRY_KEY) || '');
+          this.buildCountrySelect();
+          await this.loadCountry(this.country);
+        }
+        if (this.autoplayUuid) await this.cueByUuid(this.autoplayUuid);
         return;
       }
 
@@ -291,11 +311,16 @@ class Player {
     this.countrySelect.value = this.country;
   }
 
-  /** Load all stations for a country at once (empty code = worldwide top). */
+  /** Switch country (empty code = worldwide top) and reload. */
   private async loadCountry(code: string) {
-    const token = ++this.loadToken;
     this.country = code;
     try { localStorage.setItem(COUNTRY_KEY, code); } catch { /* ignore */ }
+    await this.load();
+  }
+
+  /** Load all stations for the current country/tags at once. */
+  private async load() {
+    const token = ++this.loadToken;
     this.all = [];
     this.activeGenre = 'all';
     this.page = 1;
@@ -307,7 +332,7 @@ class Player {
 
     let list: Station[];
     try {
-      list = await this.fetchAll(code);
+      list = await this.fetchAll();
     } catch (err) {
       if (token !== this.loadToken) return;
       console.error(err);
@@ -326,14 +351,15 @@ class Player {
       return;
     }
     this.buildGenreFilters();
-    this.restoreLast();
+    if (!this.autoplayUuid) this.restoreLast();
     this.applyFilter();
   }
 
-  /** Fetch the full station list for the current country in one request. */
-  private async fetchAll(code: string): Promise<Station[]> {
+  /** Fetch the full station list for the current country/tags in one request. */
+  private async fetchAll(): Promise<Station[]> {
     const params = new URLSearchParams({ limit: String(FETCH_LIMIT) });
-    if (code) params.set('country', code);
+    if (this.tags) params.set('tags', this.tags);
+    if (this.country) params.set('country', this.country);
     const res = await fetch(`${API_STATIONS}?${params}`);
     if (!res.ok) throw new Error('API ' + res.status);
     const list: Station[] = await res.json();
@@ -345,6 +371,38 @@ class Player {
       deduped.push(s);
     }
     return deduped;
+  }
+
+  /** Resolve a station by UUID (from a deep link) and cue it, attempting autoplay. */
+  private async cueByUuid(uuid: string) {
+    let s: Station | null = this.all.find((x) => x.stationuuid === uuid) || null;
+    if (!s) {
+      try {
+        const res = await fetch(`${API_STATION}?uuid=${encodeURIComponent(uuid)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.stationuuid) s = data as Station;
+        }
+      } catch { /* ignore */ }
+    }
+    if (!s) return;
+    this.current = s;
+    this.showNowPlaying(s, 'paused');
+    this.updateNavButtons();
+    this.goToStation(s);
+    try { localStorage.setItem(STORAGE_KEY, s.stationuuid); } catch { /* ignore */ }
+    // Attempt autoplay; browsers may block it without a user gesture, in which
+    // case the station stays cued (paused) for the user to press play.
+    this.audio.src = s.url_resolved;
+    const station = s;
+    this.audio.play().then(() => addToHistory(station)).catch(() => { /* autoplay blocked */ });
+  }
+
+  /** Play a random station from the loaded set. */
+  private surprise() {
+    if (this.all.length === 0) return;
+    const s = this.all[Math.floor(Math.random() * this.all.length)];
+    this.play(s);
   }
 
   /** Restore the last-played station into the mini bar (paused), if present. */
@@ -617,7 +675,9 @@ class Player {
         ? 'You don’t have any favorites yet.<br>Tap the star on a station to save it here.'
         : this.mode === 'history'
           ? 'Your history is empty.<br>Start listening and stations will appear here.'
-          : 'No stations found for this country.<br>Try another country from the menu above.';
+          : this.tags
+            ? 'No stations found for this collection.<br>Try another mood or browse by country.'
+            : 'No stations found for this country.<br>Try another country from the menu above.';
     this.statusEl.style.display = '';
     this.statusEl.innerHTML = `<p class="empty">${msg}</p>${this.mode !== 'browse' ? '<a class="cta cta-secondary" href="/">Browse all stations</a>' : ''}`;
   }
@@ -760,7 +820,7 @@ class Player {
   private async share() {
     if (!this.current) return;
     const text = `I'm listening to ${this.current.name} on World Radio Stations`;
-    const url = window.location.origin;
+    const url = `${window.location.origin}/listen/${this.current.stationuuid}`;
     const label = document.querySelector<HTMLElement>('[data-share-label]');
     if (navigator.share) {
       try { await navigator.share({ title: text, url }); } catch { /* cancelled */ }
