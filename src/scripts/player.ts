@@ -1,6 +1,7 @@
 import {
   type Station,
   STORE_EVENT,
+  addSong,
   addToHistory,
   getFavorites,
   getHistory,
@@ -17,7 +18,10 @@ const STORAGE_KEY = 'wrs-last-station';
 const VOLUME_KEY = 'wrs-volume';
 const VIEW_KEY = 'wrs-view';
 const COUNTRY_KEY = 'wrs-country';
+const ALARM_KEY = 'wrs-alarm';
 const PAGE_SIZE = 24;
+// Stop auto-skipping after this many dead streams in a row (e.g. when offline).
+const MAX_AUTO_SKIP = 6;
 // Upper bound of stations loaded per country in one request. Large countries are
 // returned ordered by popularity, so this is effectively "the top N stations".
 const FETCH_LIMIT = 1000;
@@ -70,6 +74,14 @@ class Player {
   private sleepTimeout: ReturnType<typeof setTimeout> | null = null;
   private sleepEnd = 0;
   private sleepInterval: ReturnType<typeof setInterval> | null = null;
+
+  // Alarm / wake-to-radio
+  private alarmTime = '';
+  private alarmInterval: ReturnType<typeof setInterval> | null = null;
+  private alarmLastTrigger = '';
+
+  // Reliability: consecutive dead-stream auto-skips
+  private autoSkips = 0;
 
   // Now-playing song
   private songPollTimer: ReturnType<typeof setInterval> | null = null;
@@ -159,10 +171,10 @@ class Player {
     this.audio.volume = isNaN(savedVol) ? 0.8 : savedVol;
     this.modalVolume.value = String(this.audio.volume);
 
-    this.audio.addEventListener('playing', () => this.setState('playing'));
+    this.audio.addEventListener('playing', () => { this.autoSkips = 0; this.setState('playing'); });
     this.audio.addEventListener('pause', () => this.setState('paused'));
     this.audio.addEventListener('waiting', () => this.setState('loading'));
-    this.audio.addEventListener('error', () => this.setState('error'));
+    this.audio.addEventListener('error', () => this.handlePlaybackError());
 
     this.npToggle.addEventListener('click', (e) => { e.stopPropagation(); this.toggle(); });
     this.npPrev.addEventListener('click', (e) => { e.stopPropagation(); this.step(-1); });
@@ -249,6 +261,30 @@ class Player {
         });
       });
     }
+
+    // Alarm / wake-to-radio
+    const alarmToggle = document.querySelector<HTMLButtonElement>('[data-alarm-toggle]');
+    const alarmOptions = document.querySelector<HTMLElement>('[data-alarm-options]');
+    const alarmInput = document.querySelector<HTMLInputElement>('[data-alarm-input]');
+    const alarmSet = document.querySelector<HTMLButtonElement>('[data-alarm-set]');
+    const alarmClear = document.querySelector<HTMLButtonElement>('[data-alarm-clear]');
+    if (alarmToggle && alarmOptions) {
+      alarmToggle.addEventListener('click', () => { alarmOptions.hidden = !alarmOptions.hidden; });
+    }
+    if (alarmSet && alarmInput) {
+      alarmSet.addEventListener('click', () => {
+        if (!alarmInput.value) return;
+        this.setAlarm(alarmInput.value);
+        if (alarmOptions) alarmOptions.hidden = true;
+      });
+    }
+    if (alarmClear) {
+      alarmClear.addEventListener('click', () => {
+        this.clearAlarm();
+        if (alarmOptions) alarmOptions.hidden = true;
+      });
+    }
+    this.loadAlarm();
 
     // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
@@ -516,6 +552,73 @@ class Player {
     if (label) label.textContent = `${minutes} min`;
   }
 
+  // ----- Alarm / wake-to-radio -----
+
+  private loadAlarm() {
+    const saved = localStorage.getItem(ALARM_KEY) || '';
+    if (/^\d{2}:\d{2}$/.test(saved)) {
+      this.alarmTime = saved;
+      this.startAlarmChecker();
+    }
+    this.updateAlarmLabel();
+  }
+
+  private setAlarm(time: string) {
+    if (!/^\d{2}:\d{2}$/.test(time)) return;
+    this.alarmTime = time;
+    try { localStorage.setItem(ALARM_KEY, time); } catch { /* ignore */ }
+    this.alarmLastTrigger = '';
+    this.startAlarmChecker();
+    this.updateAlarmLabel();
+  }
+
+  private clearAlarm() {
+    this.alarmTime = '';
+    try { localStorage.removeItem(ALARM_KEY); } catch { /* ignore */ }
+    if (this.alarmInterval) clearInterval(this.alarmInterval);
+    this.alarmInterval = null;
+    this.updateAlarmLabel();
+  }
+
+  private startAlarmChecker() {
+    if (this.alarmInterval) clearInterval(this.alarmInterval);
+    this.alarmInterval = setInterval(() => this.checkAlarm(), 15_000);
+  }
+
+  private checkAlarm() {
+    if (!this.alarmTime) return;
+    const now = new Date();
+    const hhmm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    if (hhmm !== this.alarmTime) return;
+    const minuteKey = now.toDateString() + ' ' + hhmm;
+    if (this.alarmLastTrigger === minuteKey) return;
+    this.alarmLastTrigger = minuteKey;
+    this.triggerAlarm();
+  }
+
+  private triggerAlarm() {
+    if (!this.current) this.restoreLast();
+    if (this.current) this.play(this.current);
+  }
+
+  private updateAlarmLabel() {
+    const label = document.querySelector<HTMLElement>('[data-alarm-label]');
+    if (label) label.textContent = this.alarmTime ? `Alarm ${this.alarmTime}` : 'Alarm';
+    const input = document.querySelector<HTMLInputElement>('[data-alarm-input]');
+    if (input && this.alarmTime) input.value = this.alarmTime;
+  }
+
+  /** A stream failed to play. Briefly show the error, then auto-skip to the next. */
+  private handlePlaybackError() {
+    this.setState('error');
+    if (this.filtered.length > 1 && this.autoSkips < MAX_AUTO_SKIP) {
+      this.autoSkips++;
+      setTimeout(() => {
+        if (this.state === 'error') this.step(1);
+      }, 1200);
+    }
+  }
+
   private startSongPoll() {
     this.stopSongPoll();
     this.fetchNowPlaying();
@@ -536,11 +639,29 @@ class Player {
         body: JSON.stringify({ url: this.current.url_resolved }),
       });
       const data = await res.json();
-      const song = data.title || '';
+      const song = (data.title || '').trim();
       if (this.npSongEl) this.npSongEl.textContent = song;
       const modalSong = document.querySelector<HTMLElement>('[data-modal-song]');
       if (modalSong) modalSong.textContent = song;
+      this.updateSongActions(song);
+      if (song) addSong(song, this.current);
     } catch { /* ignore */ }
+  }
+
+  /** Show/refresh the "find this song" Spotify/YouTube links in the modal. */
+  private updateSongActions(song: string) {
+    const wrap = document.querySelector<HTMLElement>('[data-song-actions]');
+    if (!wrap) return;
+    if (!song) {
+      wrap.hidden = true;
+      return;
+    }
+    const q = encodeURIComponent(song);
+    const spotify = wrap.querySelector<HTMLAnchorElement>('[data-song-spotify]');
+    const youtube = wrap.querySelector<HTMLAnchorElement>('[data-song-youtube]');
+    if (spotify) spotify.href = `https://open.spotify.com/search/${q}`;
+    if (youtube) youtube.href = `https://www.youtube.com/results?search_query=${q}`;
+    wrap.hidden = false;
   }
 
   private updateCount(totalPages: number) {
@@ -630,10 +751,11 @@ class Player {
     const bitrate = s.bitrate > 0 ? `<span class="station-bitrate">${s.bitrate} kbps</span>` : '';
     const place = (s.country || '').trim();
     const placeChip = this.mode === 'browse' && place ? `<span class="station-bitrate">${escapeHtml(place)}</span>` : '';
+    const verified = s.lastcheckok === 1 ? '<span class="station-verified" title="Verified working">✓</span>' : '';
     card.innerHTML = `
       <div class="station-logo">${logo}</div>
       <div class="station-meta">
-        <p class="station-name">${escapeHtml(s.name)}</p>
+        <p class="station-name">${escapeHtml(s.name)}${verified}</p>
         <span class="station-tag-row">${tag ? `<span class="station-tag">${escapeHtml(tag)}</span>` : ''}${placeChip}${bitrate}${votes}</span>
       </div>
       <button class="fav-btn ${fav ? 'active' : ''}" data-fav type="button" aria-label="${fav ? 'Remove from favorites' : 'Add to favorites'}" aria-pressed="${fav}">
@@ -643,11 +765,13 @@ class Player {
     card.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
       if (target.closest('[data-fav]')) return;
+      this.autoSkips = 0;
       this.play(s);
     });
     card.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
+        this.autoSkips = 0;
         this.play(s);
       }
     });
@@ -764,9 +888,13 @@ class Player {
       : `<span class="fallback">${initial}</span>`;
     this.npLogo.innerHTML = logoHtml;
     this.npName.textContent = s.name;
+    if (this.npSongEl) this.npSongEl.textContent = '';
     this.modalLogo.innerHTML = logoHtml;
     this.modalName.textContent = s.name;
     this.modalLang.textContent = s.country || s.language || '';
+    const modalSong = document.querySelector<HTMLElement>('[data-modal-song]');
+    if (modalSong) modalSong.textContent = '';
+    this.updateSongActions('');
     this.renderTags(s);
     this.refreshFavStars();
     this.updateVoteDisplay(s);

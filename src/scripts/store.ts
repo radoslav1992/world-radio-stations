@@ -16,6 +16,7 @@ export interface Station {
   state: string;
   language: string;
   votes: number;
+  lastcheckok?: number;
 }
 
 export interface HistoryEntry {
@@ -23,14 +24,23 @@ export interface HistoryEntry {
   playedAt: number; // ms timestamp
 }
 
+export interface SongEntry {
+  title: string;
+  station: string;
+  stationuuid: string;
+  playedAt: number; // ms timestamp
+}
+
 const FAV_KEY = 'wrs-favorites';
 const HIST_KEY = 'wrs-history';
+const SONGS_KEY = 'wrs-songs';
 const MAX_FAVORITES = 200;
 const MAX_HISTORY = 50;
+const MAX_SONGS = 100;
 
 export const STORE_EVENT = 'wrs:store-changed';
 
-type ChangeKind = 'favorites' | 'history';
+type ChangeKind = 'favorites' | 'history' | 'songs';
 
 function emit(kind: ChangeKind) {
   document.dispatchEvent(new CustomEvent(STORE_EVENT, { detail: { kind } }));
@@ -106,4 +116,34 @@ export function addToHistory(station: Station) {
 export function clearHistory() {
   writeJson(HIST_KEY, []);
   emit('history');
+}
+
+// ----- Songs heard -----
+
+export function getSongs(): SongEntry[] {
+  return readJson<SongEntry[]>(SONGS_KEY, []);
+}
+
+/** Log a detected now-playing song. Skips empties and consecutive duplicates. */
+export function addSong(title: string, station: Station) {
+  const clean = (title || '').trim();
+  if (!clean) return;
+  const songs = getSongs();
+  if (songs.length > 0 && songs[0].title === clean && songs[0].stationuuid === station.stationuuid) {
+    return; // same song still playing on the same station
+  }
+  songs.unshift({
+    title: clean,
+    station: station.name,
+    stationuuid: station.stationuuid,
+    playedAt: Date.now(),
+  });
+  if (songs.length > MAX_SONGS) songs.length = MAX_SONGS;
+  writeJson(SONGS_KEY, songs);
+  emit('songs');
+}
+
+export function clearSongs() {
+  writeJson(SONGS_KEY, []);
+  emit('songs');
 }

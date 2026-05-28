@@ -1,0 +1,96 @@
+---
+import Base from '../layouts/Base.astro';
+---
+<Base
+  title="Songs I heard — World Radio Stations"
+  description="A log of songs detected while you listened, with one-tap links to find each track on Spotify or YouTube."
+  noindex={true}
+>
+  <section class="container page-head songs-head">
+    <div>
+      <h1>Songs I heard</h1>
+      <p class="page-sub">Tracks detected while you listened — find them on Spotify or YouTube.</p>
+    </div>
+    <button class="cta cta-secondary" data-clear-songs type="button" hidden>Clear log</button>
+  </section>
+
+  <section class="container">
+    <div class="song-log" data-song-log></div>
+    <p class="empty song-empty" data-song-empty hidden>
+      No songs yet.<br>Play a station — when it broadcasts the track name, it’ll show up here.
+    </p>
+  </section>
+</Base>
+
+<script>
+  import { getSongs, clearSongs, STORE_EVENT, type SongEntry } from '../scripts/store';
+
+  const list = document.querySelector<HTMLElement>('[data-song-log]');
+  const empty = document.querySelector<HTMLElement>('[data-song-empty]');
+  const clearBtn = document.querySelector<HTMLButtonElement>('[data-clear-songs]');
+  if (list && empty && clearBtn) {
+    const fmt = (ts: number) => {
+      try {
+        return new Date(ts).toLocaleString(undefined, {
+          month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
+        });
+      } catch {
+        return '';
+      }
+    };
+
+    const makeLink = (label: string, href: string) => {
+      const a = document.createElement('a');
+      a.className = 'song-link';
+      a.textContent = label;
+      a.href = href;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      return a;
+    };
+
+    const render = () => {
+      const songs: SongEntry[] = getSongs();
+      list.innerHTML = '';
+      empty.hidden = songs.length > 0;
+      clearBtn.hidden = songs.length === 0;
+
+      for (const s of songs) {
+        const q = encodeURIComponent(s.title);
+        const row = document.createElement('div');
+        row.className = 'song-entry';
+
+        const info = document.createElement('div');
+        info.className = 'song-info';
+        const title = document.createElement('p');
+        title.className = 'song-title';
+        title.textContent = s.title;
+        const meta = document.createElement('p');
+        meta.className = 'song-meta';
+        meta.textContent = `${s.station} · ${fmt(s.playedAt)}`;
+        info.append(title, meta);
+
+        const links = document.createElement('div');
+        links.className = 'song-links';
+        links.append(
+          makeLink('Spotify', `https://open.spotify.com/search/${q}`),
+          makeLink('YouTube', `https://www.youtube.com/results?search_query=${q}`),
+        );
+
+        row.append(info, links);
+        list.appendChild(row);
+      }
+    };
+
+    clearBtn.addEventListener('click', () => {
+      if (confirm('Clear your song log?')) clearSongs();
+    });
+
+    document.addEventListener(STORE_EVENT, (e) => {
+      const detail = (e as CustomEvent).detail as { kind: string };
+      if (detail.kind === 'songs') render();
+    });
+
+    render();
+  }
+</script>
