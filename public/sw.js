@@ -1,10 +1,9 @@
-const CACHE_VERSION = 'world-radio-v1';
+const CACHE_VERSION = 'world-radio-v2';
 const APP_SHELL = [
   '/',
   '/logo.png',
+  '/logo-mark.png',
   '/favicon.png',
-  '/favicon.svg',
-  '/logo.svg',
   '/manifest.json',
 ];
 
