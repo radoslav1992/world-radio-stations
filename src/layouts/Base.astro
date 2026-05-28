@@ -29,7 +29,7 @@ const DEFAULT_DESC = 'Listen to thousands of radio stations from around the worl
 const {
   title,
   description = DEFAULT_DESC,
-  ogImage = '/logo.png',
+  ogImage = '/og.png',
   canonicalPath,
   ogType = 'website',
   jsonLd,
@@ -73,8 +73,8 @@ const jsonLdArr = [orgJsonLd, ...(jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [js
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
     <meta property="og:image" content={ogImageAbs} />
-    <meta property="og:image:width" content="512" />
-    <meta property="og:image:height" content="512" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
     <meta property="og:locale" content="en_US" />
     {publishedTime && <meta property="article:published_time" content={publishedTime} />}
     {articleAuthor && <meta property="article:author" content={articleAuthor} />}
@@ -87,7 +87,7 @@ const jsonLdArr = [orgJsonLd, ...(jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [js
     <meta name="twitter:image" content={ogImageAbs} />
 
     <link rel="icon" type="image/png" href="/favicon.png" />
-    <link rel="apple-touch-icon" href="/logo.png" />
+    <link rel="apple-touch-icon" href="/logo-mark.png" />
     <link rel="manifest" href="/manifest.json" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -110,12 +110,12 @@ const jsonLdArr = [orgJsonLd, ...(jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [js
     */}
 
     <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-TT4LN8D2B8"></script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-YTN8XCRQPB"></script>
     <script is:inline>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-      gtag('config', 'G-TT4LN8D2B8');
+      gtag('config', 'G-YTN8XCRQPB');
     </script>
 
     <title>{title}</title>
@@ -128,7 +128,7 @@ const jsonLdArr = [orgJsonLd, ...(jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [js
     <header class="site">
       <div class="container row">
         <a class="brand" href="/">
-          <img src="/logo.png" alt="" width="40" height="40" />
+          <img src="/logo-mark.png" alt="" width="40" height="40" />
           <span class="brand-name">World Radio Stations</span>
         </a>
         <button class="nav-toggle" type="button" aria-label="Menu" aria-expanded="false" aria-controls="main-nav">
@@ -155,7 +155,7 @@ const jsonLdArr = [orgJsonLd, ...(jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [js
       <div class="container footer-grid">
         <div class="footer-col footer-brand">
           <div class="brand">
-            <img src="/logo.png" alt="" width="36" height="36" />
+            <img src="/logo-mark.png" alt="" width="36" height="36" />
             <span>World Radio Stations</span>
           </div>
           <p>Free access to radio stations from around the world — right in your browser. An Android app is coming soon.</p>

@@ -8,9 +8,10 @@
   "description": "Listen to thousands of radio stations from around the world in one place — music, news and live entertainment.",
   "icons": [
     {
-      "src": "/logo.png",
+      "src": "/logo-mark.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "/favicon.png",
