@@ -3,8 +3,8 @@ import type { APIRoute } from 'astro';
 export const prerender = false;
 
 const HOST = 'https://de1.api.radio-browser.info/json/stations';
-const DEFAULT_LIMIT = 100;
-const MAX_LIMIT = 200;
+const DEFAULT_LIMIT = 1000;
+const MAX_LIMIT = 1000;
 const FETCH_HEADERS = { 'User-Agent': 'WorldRadioStations/1.0 (+https://worldradiostations.org)' };
 
 function clampInt(value: string | null, fallback: number, min: number, max: number): number {

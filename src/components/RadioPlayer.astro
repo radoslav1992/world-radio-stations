@@ -58,9 +58,7 @@ const { mode = 'browse', showSearch = mode === 'browse' } = Astro.props;
   </div>
 
   <div class="stations" data-stations></div>
-  <div class="sentinel" data-sentinel aria-hidden="true">
-    <div class="spinner small"></div>
-  </div>
+  <nav class="pager" data-pager aria-label="Pagination" style="display:none;"></nav>
 </div>
 
 <!-- Mini bar -->
