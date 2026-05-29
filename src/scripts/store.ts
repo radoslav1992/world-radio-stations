@@ -107,3 +107,77 @@ export function clearHistory() {
   writeJson(HIST_KEY, []);
   emit('history');
 }
+
+// ----- Backup / restore (no account, fully local) -----
+
+export interface BackupFile {
+  app: 'world-radio-stations';
+  version: 1;
+  exportedAt: string;
+  favorites: Station[];
+  history: HistoryEntry[];
+}
+
+/** Serialize favorites + history into a portable backup object. */
+export function exportData(): BackupFile {
+  return {
+    app: 'world-radio-stations',
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    favorites: getFavorites(),
+    history: getHistory(),
+  };
+}
+
+function isStation(s: any): s is Station {
+  return s && typeof s.stationuuid === 'string' && typeof s.name === 'string'
+    && typeof s.url_resolved === 'string';
+}
+
+/**
+ * Merge a backup file into local storage. Existing entries are kept; imported
+ * favorites/history are de-duped by station UUID. Returns how many new items
+ * were added so the UI can report it.
+ */
+export function importData(data: unknown): { favorites: number; history: number } {
+  const file = data as Partial<BackupFile>;
+  let favAdded = 0;
+  let histAdded = 0;
+
+  if (Array.isArray(file?.favorites)) {
+    const favs = getFavorites();
+    const seen = new Set(favs.map((s) => s.stationuuid));
+    for (const s of file.favorites) {
+      if (isStation(s) && !seen.has(s.stationuuid)) {
+        favs.push(s);
+        seen.add(s.stationuuid);
+        favAdded++;
+      }
+    }
+    if (favAdded > 0) {
+      if (favs.length > MAX_FAVORITES) favs.length = MAX_FAVORITES;
+      writeJson(FAV_KEY, favs);
+      emit('favorites');
+    }
+  }
+
+  if (Array.isArray(file?.history)) {
+    const hist = getHistory();
+    const seen = new Set(hist.map((e) => e.station.stationuuid));
+    for (const e of file.history) {
+      if (e && isStation(e.station) && !seen.has(e.station.stationuuid)) {
+        hist.push({ station: e.station, playedAt: typeof e.playedAt === 'number' ? e.playedAt : Date.now() });
+        seen.add(e.station.stationuuid);
+        histAdded++;
+      }
+    }
+    if (histAdded > 0) {
+      hist.sort((a, b) => b.playedAt - a.playedAt);
+      if (hist.length > MAX_HISTORY) hist.length = MAX_HISTORY;
+      writeJson(HIST_KEY, hist);
+      emit('history');
+    }
+  }
+
+  return { favorites: favAdded, history: histAdded };
+}

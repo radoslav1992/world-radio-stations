@@ -74,6 +74,7 @@ class Player {
   // Now-playing song
   private songPollTimer: ReturnType<typeof setInterval> | null = null;
   private npSongEl: HTMLElement | null = null;
+  private currentSong = '';
 
   // Mini bar refs
   private nowPlaying: HTMLElement;
@@ -163,6 +164,8 @@ class Player {
     this.audio.addEventListener('pause', () => this.setState('paused'));
     this.audio.addEventListener('waiting', () => this.setState('loading'));
     this.audio.addEventListener('error', () => this.setState('error'));
+
+    this.setupMediaSession();
 
     this.npToggle.addEventListener('click', (e) => { e.stopPropagation(); this.toggle(); });
     this.npPrev.addEventListener('click', (e) => { e.stopPropagation(); this.step(-1); });
@@ -516,6 +519,45 @@ class Player {
     if (label) label.textContent = `${minutes} min`;
   }
 
+  /**
+   * Wire up the Media Session API so the OS shows the station in the
+   * lock screen / notification shade and hardware media keys, Bluetooth
+   * controls and the lock screen can drive playback in the background.
+   */
+  private setupMediaSession() {
+    if (!('mediaSession' in navigator)) return;
+    const ms = navigator.mediaSession;
+    try {
+      ms.setActionHandler('play', () => this.toggle());
+      ms.setActionHandler('pause', () => this.toggle());
+      ms.setActionHandler('stop', () => this.audio.pause());
+      ms.setActionHandler('previoustrack', () => this.step(-1));
+      ms.setActionHandler('nexttrack', () => this.step(1));
+    } catch { /* some handlers unsupported on this platform */ }
+  }
+
+  /** Push the current station + song into the OS media session UI. */
+  private updateMediaSession() {
+    if (!('mediaSession' in navigator) || !this.current) return;
+    const s = this.current;
+    const place = (s.country || s.language || '').trim();
+    const artwork = s.favicon && s.favicon.startsWith('https://')
+      ? [
+          { src: s.favicon, sizes: '96x96', type: 'image/png' },
+          { src: s.favicon, sizes: '256x256', type: 'image/png' },
+          { src: s.favicon, sizes: '512x512', type: 'image/png' },
+        ]
+      : [{ src: `${window.location.origin}/logo-mark.png`, sizes: '512x512', type: 'image/png' }];
+    try {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: this.currentSong || s.name,
+        artist: this.currentSong ? s.name : (place || 'Live radio'),
+        album: 'World Radio Stations',
+        artwork,
+      });
+    } catch { /* MediaMetadata unsupported */ }
+  }
+
   private startSongPoll() {
     this.stopSongPoll();
     this.fetchNowPlaying();
@@ -537,9 +579,11 @@ class Player {
       });
       const data = await res.json();
       const song = data.title || '';
+      this.currentSong = song;
       if (this.npSongEl) this.npSongEl.textContent = song;
       const modalSong = document.querySelector<HTMLElement>('[data-modal-song]');
       if (modalSong) modalSong.textContent = song;
+      this.updateMediaSession();
     } catch { /* ignore */ }
   }
 
@@ -758,6 +802,7 @@ class Player {
 
   private showNowPlaying(s: Station, state: PlayState) {
     this.nowPlaying.classList.add('visible');
+    this.currentSong = '';
     const initial = s.name.charAt(0).toUpperCase();
     const logoHtml = s.favicon
       ? `<img src="${escapeAttr(s.favicon)}" alt="" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'fallback',textContent:'${initial}'}))" />`
@@ -770,6 +815,7 @@ class Player {
     this.renderTags(s);
     this.refreshFavStars();
     this.updateVoteDisplay(s);
+    this.updateMediaSession();
     this.setState(state);
   }
 
@@ -870,6 +916,10 @@ class Player {
     this.npToggle.setAttribute('aria-label', ariaLabel);
     this.modalToggle.setAttribute('aria-label', ariaLabel);
     this.modalVu.classList.toggle('animating', state === 'playing');
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.playbackState =
+        state === 'playing' ? 'playing' : state === 'loading' ? 'playing' : 'paused';
+    }
     if (state === 'playing') this.startSongPoll(); else this.stopSongPoll();
     if (this.current) {
       const isActive = !this.audio.paused;

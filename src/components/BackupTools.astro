@@ -1,0 +1,78 @@
+---
+/**
+ * Backup & restore for favorites + history. Fully local, no account required —
+ * export a JSON file and import it on another device or browser to move your
+ * stations across. Drop this on any page that manages saved data.
+ */
+---
+<div class="backup-tools" data-backup>
+  <div class="backup-text">
+    <strong>Backup &amp; restore</strong>
+    <p>Move your favorites and history to another device or browser — no account needed.</p>
+  </div>
+  <div class="backup-actions">
+    <button type="button" class="cta cta-secondary" data-backup-export>Export</button>
+    <button type="button" class="cta cta-secondary" data-backup-import>Import</button>
+    <input type="file" accept="application/json,.json" data-backup-file hidden />
+  </div>
+  <p class="backup-status" data-backup-status role="status" aria-live="polite"></p>
+</div>
+
+<script>
+  import { exportData, importData } from '../scripts/store';
+
+  const root = document.querySelector<HTMLElement>('[data-backup]');
+  if (root) {
+    const exportBtn = root.querySelector<HTMLButtonElement>('[data-backup-export]')!;
+    const importBtn = root.querySelector<HTMLButtonElement>('[data-backup-import]')!;
+    const fileInput = root.querySelector<HTMLInputElement>('[data-backup-file]')!;
+    const status = root.querySelector<HTMLElement>('[data-backup-status]')!;
+
+    const say = (msg: string) => {
+      status.textContent = msg;
+      if (msg) setTimeout(() => { if (status.textContent === msg) status.textContent = ''; }, 5000);
+    };
+
+    exportBtn.addEventListener('click', () => {
+      const data = exportData();
+      if (data.favorites.length === 0 && data.history.length === 0) {
+        say('Nothing to export yet.');
+        return;
+      }
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `world-radio-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      say('Backup downloaded.');
+    });
+
+    importBtn.addEventListener('click', () => fileInput.click());
+
+    fileInput.addEventListener('change', async () => {
+      const file = fileInput.files?.[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const parsed = JSON.parse(text);
+        const added = importData(parsed);
+        if (added.favorites === 0 && added.history === 0) {
+          say('Nothing new to import — everything was already here.');
+        } else {
+          const parts: string[] = [];
+          if (added.favorites) parts.push(`${added.favorites} favorite${added.favorites === 1 ? '' : 's'}`);
+          if (added.history) parts.push(`${added.history} history item${added.history === 1 ? '' : 's'}`);
+          say(`Imported ${parts.join(' and ')}.`);
+        }
+      } catch {
+        say('That file couldn’t be read. Pick a valid backup file.');
+      } finally {
+        fileInput.value = '';
+      }
+    });
+  }
+</script>

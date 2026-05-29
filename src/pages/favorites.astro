@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import RadioPlayer from '../components/RadioPlayer.astro';
+import BackupTools from '../components/BackupTools.astro';
 ---
 <Base title="Favorite stations — World Radio Stations" description="Quick access to your saved radio stations from around the world. Listen to your favorites for free online." noindex={true}>
   <section class="container page-head">
@@ -10,5 +11,9 @@ import RadioPlayer from '../components/RadioPlayer.astro';
 
   <section class="container player-section">
     <RadioPlayer mode="favorites" showSearch={true} />
+  </section>
+
+  <section class="container">
+    <BackupTools />
   </section>
 </Base>
