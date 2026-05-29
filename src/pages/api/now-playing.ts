@@ -111,9 +111,57 @@ async function readIcyTitle(
     const match = metaString.match(/StreamTitle='([^']*)'/);
     if (!match || !match[1]) return null;
 
-    const title = match[1].trim();
+    const title = cleanStreamTitle(match[1]) || match[1].trim();
     return title.length > 0 ? title : null;
   } finally {
     reader.cancel();
   }
+}
+
+/**
+ * Normalize an ICY StreamTitle into a clean "Artist - Title".
+ *
+ * Some stations (notably iHeart) pack extra key="value" metadata into the
+ * title, e.g.  `Taylor Swift - text="The Fate Of Ophelia" song_spot="M" ...`
+ * or  `title="X",artist="Y"`. We extract the human-readable part and drop the
+ * machine fields.
+ */
+function cleanStreamTitle(raw: string): string {
+  let s = decodeEntities(raw.trim());
+  if (!s) return '';
+
+  // Structured fields: title="..." (+ optional artist="...").
+  const titleField = s.match(/\btitle="([^"]*)"/i)?.[1]?.trim();
+  if (titleField) {
+    const artistField = s.match(/\bartist="([^"]*)"/i)?.[1]?.trim();
+    return artistField ? `${artistField} - ${titleField}` : titleField;
+  }
+
+  // iHeart-style:  <artist> - text="<title>" <junk>...
+  const textM = s.match(/\btext="([^"]*)"/i);
+  if (textM) {
+    const inner = textM[1].trim();
+    const before = s.slice(0, s.indexOf(textM[0]))
+      .replace(/["']/g, '')
+      .replace(/[\s–—-]+$/, '')
+      .trim();
+    if (!before || /="/.test(before) || inner.includes(' - ')) return inner;
+    return `${before} - ${inner}`;
+  }
+
+  // Generic: drop trailing `key="value"` metadata tokens.
+  const kvIdx = s.search(/\s+[A-Za-z_][\w-]*="/);
+  if (kvIdx > 0) s = s.slice(0, kvIdx);
+
+  // Tidy stray quotes and any dangling separator.
+  return s.replace(/^["']+|["']+$/g, '').replace(/\s*[-–—]\s*$/, '').trim();
+}
+
+function decodeEntities(s: string): string {
+  return s
+    .replace(/&amp;/gi, '&')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#0?39;|&apos;/gi, "'")
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>');
 }
