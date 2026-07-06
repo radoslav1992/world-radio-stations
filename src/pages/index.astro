@@ -2,6 +2,7 @@
 import Base from '../layouts/Base.astro';
 import Feature from '../components/Feature.astro';
 import { COUNTRIES } from '../scripts/countries';
+import { GENRES } from '../data/genres';
 import RadioPlayer from '../components/RadioPlayer.astro';
 import { getCollection } from 'astro:content';
 
@@ -119,6 +120,7 @@ const jsonLd = [
   },
 ];
 const topCountries = COUNTRIES.slice(0, 12);
+const topGenres = GENRES.slice(0, 12);
 ---
 <Base
   title="World Radio Stations — Listen to radio from around the world online"
@@ -200,6 +202,23 @@ const topCountries = COUNTRIES.slice(0, 12);
     </div>
     <div style="text-align:center; margin-top:1.5rem;">
       <a class="link-arrow" href="/country">All countries →</a>
+    </div>
+  </section>
+
+  <section class="container">
+    <div class="section-head">
+      <h2>Radio by genre</h2>
+      <p>Classical to techno, news to reggae — pick a sound and press play.</p>
+    </div>
+    <div class="facet-grid">
+      {topGenres.map((g) => (
+        <a class="facet-card" href={`/genre/${g.slug}`}>
+          <span class="facet-name">{g.emoji} {g.title}</span>
+        </a>
+      ))}
+    </div>
+    <div style="text-align:center; margin-top:1.5rem;">
+      <a class="link-arrow" href="/genre">All genres →</a>
     </div>
   </section>
 

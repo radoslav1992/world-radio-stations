@@ -1,0 +1,171 @@
+---
+import Base from '../../layouts/Base.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import RadioPlayer from '../../components/RadioPlayer.astro';
+import { getCollection } from 'astro:content';
+import { GENRES, getGenre } from '../../data/genres';
+
+export const prerender = false;
+
+const SITE_URL = 'https://worldradiostations.org';
+const API = 'https://de1.api.radio-browser.info/json';
+const FETCH_HEADERS = { 'User-Agent': 'WorldRadioStations/1.0 (+https://worldradiostations.org)' };
+
+const { slug = '' } = Astro.params;
+const genre = getGenre(slug.toLowerCase());
+
+if (!genre) {
+  Astro.response.status = 404;
+}
+
+// Top stations for the crawlable list (the embedded player loads its own).
+let stations: any[] = [];
+if (genre) {
+  try {
+    const res = await fetch(
+      `${API}/stations/bytagexact/${encodeURIComponent(genre.tag)}?hidebroken=true&order=clickcount&reverse=true&limit=60`,
+      { headers: FETCH_HEADERS },
+    );
+    if (res.ok) {
+      const raw = await res.json();
+      const seen = new Set<string>();
+      for (const s of Array.isArray(raw) ? raw : []) {
+        const u = s?.url_resolved;
+        if (typeof u !== 'string' || !u.startsWith('https://') || seen.has(u)) continue;
+        seen.add(u);
+        stations.push(s);
+      }
+    }
+  } catch { /* graceful */ }
+}
+
+Astro.response.headers.set(
+  'Cache-Control',
+  Astro.response.status === 404 ? 'public, max-age=30' : 'public, max-age=300, s-maxage=1800',
+);
+
+const shown = stations.slice(0, 48);
+const related = GENRES.filter((g) => g.slug !== genre?.slug).slice(0, 12);
+
+// Directory entries that match an editorial station profile link internally.
+// Genre lists span countries, so only names that are unique across all
+// profiles are matched — ambiguous names fall back to the live player link.
+const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '');
+const profileSlugByName = new Map<string, string>();
+const collided = new Set<string>();
+for (const p of await getCollection('stations')) {
+  const key = norm(p.data.name);
+  if (profileSlugByName.has(key)) collided.add(key);
+  else profileSlugByName.set(key, p.slug);
+}
+for (const key of collided) profileSlugByName.delete(key);
+
+const stationCountry = (s: any): string => (typeof s.country === 'string' ? s.country : '');
+
+const jsonLd = genre
+  ? [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'CollectionPage',
+        name: genre.heading,
+        description: `Listen to ${genre.title.toLowerCase()} radio stations live online, free in your browser.`,
+        inLanguage: 'en',
+        url: `${SITE_URL}/genre/${genre.slug}`,
+      },
+      {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_URL },
+          { '@type': 'ListItem', position: 2, name: 'Genres', item: `${SITE_URL}/genre` },
+          { '@type': 'ListItem', position: 3, name: genre.title },
+        ],
+      },
+      ...(shown.length
+        ? [{
+            '@context': 'https://schema.org',
+            '@type': 'ItemList',
+            numberOfItems: shown.length,
+            itemListElement: shown.map((s, i) => ({
+              '@type': 'ListItem',
+              position: i + 1,
+              name: s.name,
+              url: `${SITE_URL}/listen/${s.stationuuid}`,
+            })),
+          }]
+        : []),
+    ]
+  : undefined;
+---
+<Base
+  title={genre ? `${genre.heading} — Listen Live Online, Free | World Radio Stations` : 'Genre not found — World Radio Stations'}
+  description={genre ? `${genre.blurb} Stream the most-listened ${genre.title.toLowerCase()} stations from around the world, free in your browser. No sign-up.` : 'This genre does not exist.'}
+  jsonLd={jsonLd}
+>
+  {genre ? (
+    <>
+      <Breadcrumbs crumbs={[
+        { label: 'Home', href: '/' },
+        { label: 'Genres', href: '/genre' },
+        { label: genre.title },
+      ]} />
+
+      <section class="container listen-head">
+        <p class="listen-eyebrow"><span aria-hidden="true">{genre.emoji}</span> Genre</p>
+        <h1>{genre.heading}</h1>
+        <p class="page-sub">{genre.intro}</p>
+      </section>
+
+      <section class="container player-section">
+        <RadioPlayer tags={genre.tag} />
+      </section>
+
+      {shown.length > 0 && (
+        <section class="container">
+          <div class="section-head">
+            <h2>Top {genre.title.toLowerCase()} stations</h2>
+            <p>The most-listened {genre.title.toLowerCase()} stations on World Radio Stations right now.</p>
+          </div>
+          <div class="facet-grid">
+            {shown.map((s) => {
+              const profileSlug = profileSlugByName.get(norm(s.name || ''));
+              const country = stationCountry(s);
+              return (
+                <a
+                  class="facet-card"
+                  href={profileSlug ? `/stations/${profileSlug}` : `/listen/${s.stationuuid}`}
+                >
+                  <span class="facet-name">{s.name}</span>
+                  <span class="facet-count">{profileSlug ? 'Profile & how to listen' : (country || 'Listen live')}</span>
+                </a>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      <section class="container">
+        <div class="section-head">
+          <h2>More genres</h2>
+        </div>
+        <div class="facet-grid">
+          {related.map((g) => (
+            <a class="facet-card" href={`/genre/${g.slug}`}>
+              <span class="facet-name">{g.emoji} {g.title}</span>
+            </a>
+          ))}
+        </div>
+        <p style="margin-top:1.5rem;">
+          <a class="link-arrow" href="/genre">All genres →</a>
+          &nbsp;&nbsp;
+          <a class="link-arrow" href="/country">Radio by country →</a>
+        </p>
+      </section>
+    </>
+  ) : (
+    <section class="container page-head">
+      <h1>Genre not found</h1>
+      <p class="page-sub">That genre doesn’t exist. <a href="/genre">Browse all genres →</a></p>
+    </section>
+  )}
+</Base>

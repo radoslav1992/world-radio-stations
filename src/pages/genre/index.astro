@@ -1,0 +1,69 @@
+---
+import Base from '../../layouts/Base.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import { GENRES } from '../../data/genres';
+
+export const prerender = false;
+
+const SITE_URL = 'https://worldradiostations.org';
+const API = 'https://de1.api.radio-browser.info/json';
+const FETCH_HEADERS = { 'User-Agent': 'WorldRadioStations/1.0 (+https://worldradiostations.org)' };
+
+// Live station counts per tag; the curated GENRES list is the source of
+// truth for which pages exist — the API only decorates them with counts.
+const countByTag = new Map<string, number>();
+try {
+  const res = await fetch(
+    `${API}/tags?hidebroken=true&order=stationcount&reverse=true&limit=2000`,
+    { headers: FETCH_HEADERS },
+  );
+  if (res.ok) {
+    const list = await res.json();
+    for (const t of Array.isArray(list) ? list : []) {
+      if (t?.name && t.stationcount > 0) countByTag.set(String(t.name).toLowerCase(), t.stationcount);
+    }
+  }
+} catch { /* graceful */ }
+
+const items = GENRES.map((g) => ({ ...g, count: countByTag.get(g.tag.toLowerCase()) || 0 }));
+
+Astro.response.headers.set('Cache-Control', 'public, max-age=300, s-maxage=1800');
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: 'Radio stations by genre',
+  description: 'Browse live radio by genre — classical, news, rock, jazz, country, dance and more, free to listen online.',
+  inLanguage: 'en',
+  url: `${SITE_URL}/genre`,
+};
+---
+<Base
+  title="Radio stations by genre — World Radio Stations"
+  description="Browse live radio stations by genre — classical, news, talk, rock, country, dance, hip hop and more, streaming free in your browser."
+  jsonLd={jsonLd}
+>
+  <Breadcrumbs crumbs={[{ label: 'Home', href: '/' }, { label: 'Genres' }]} />
+
+  <section class="container blog-index">
+    <div class="section-head">
+      <h1>Radio stations by genre</h1>
+      <p>Pick a sound and press play — every genre gathers the most-listened stations from around the world, streaming directly from each station’s own servers.</p>
+    </div>
+
+    <div class="facet-grid">
+      {items.map((g) => (
+        <a class="facet-card" href={`/genre/${g.slug}`}>
+          <span class="facet-name">{g.emoji} {g.title}</span>
+          <span class="facet-count">{g.count > 0 ? `${g.count.toLocaleString('en')} stations` : g.blurb}</span>
+        </a>
+      ))}
+    </div>
+
+    <p style="margin-top:2rem;">
+      <a class="link-arrow" href="/moods">Discover by mood →</a>
+      &nbsp;&nbsp;
+      <a class="link-arrow" href="/country">Browse by country →</a>
+    </p>
+  </section>
+</Base>
