@@ -1,0 +1,72 @@
+---
+import Base from '../layouts/Base.astro';
+const CONTACT_EMAIL = 'contact@worldradiostations.org';
+---
+<Base
+  title="Content & Copyright Policy — World Radio Stations"
+  description="Which streams World Radio Stations plays, where they come from, and how station owners and rights holders can reach us."
+>
+  <article class="container legal">
+    <h1>Content &amp; Copyright Policy</h1>
+    <p class="updated">Last updated: 6 July 2026</p>
+
+    <p>
+      World Radio Stations is a directory and web player for radio stations
+      around the world. This page explains where the streams come from, what we
+      do and don’t do with them, and how station owners and rights holders can
+      contact us.
+    </p>
+
+    <h2>1. Where the streams come from</h2>
+    <p>
+      Station listings come from
+      <a href="https://www.radio-browser.info" target="_blank" rel="noopener noreferrer">Radio Browser</a>,
+      an open community index of internet radio streams. Internet simulcasting is
+      how the radio industry reaches listeners: the streams in the index are the
+      public stream URLs that stations themselves operate and promote. When you
+      press play, the audio comes <strong>directly from the station’s own
+      servers</strong> — we do not host, record, re-encode, proxy or rebroadcast
+      any audio.
+    </p>
+
+    <h2>2. What we filter out</h2>
+    <ul>
+      <li>Broken and abandoned streams (checked continuously via the index’s health data).</li>
+      <li>Streams not served over a secure (HTTPS) connection.</li>
+      <li>Listings reported to us as unauthorized rebroadcasts of another station’s stream.</li>
+    </ul>
+
+    <h2>3. Trademarks and station materials</h2>
+    <p>
+      Station names and logos belong to their respective owners and are used
+      solely to identify the stations, the way a radio dial or programme guide
+      does. Editorial texts — station profiles and blog articles — are our own
+      work.
+    </p>
+
+    <h2>4. For station owners and rights holders</h2>
+    <p>
+      If you operate a station and want your stream removed, corrected or added —
+      or you believe a listing infringes your rights — email
+      <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a> with:
+    </p>
+    <ul>
+      <li>the station and the page URL concerned;</li>
+      <li>the organisation you represent and your role;</li>
+      <li>what you’d like changed (removal, corrected stream URL, updated details).</li>
+    </ul>
+    <p>
+      We act on every such notice promptly — typically within <strong>72
+      hours</strong>. Because listings originate in the open Radio Browser index,
+      we can also help you correct the source entry so the change sticks
+      everywhere.
+    </p>
+
+    <h2>5. Mistakes happen</h2>
+    <p>
+      Stream URLs change hands and community indexes occasionally contain
+      errors. If a listing that shouldn’t be here slips through, that is an
+      error, not a practice — report it and we will remove it.
+    </p>
+  </article>
+</Base>

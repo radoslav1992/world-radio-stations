@@ -1,5 +1,6 @@
 import { getCollection } from 'astro:content';
 import { MOODS } from '../data/moods';
+import { COUNTRIES } from '../scripts/countries';
 
 export const prerender = true;
 
@@ -9,12 +10,15 @@ const staticPages = [
   { loc: '/', changefreq: 'weekly', priority: '1.0' },
   { loc: '/stations', changefreq: 'weekly', priority: '0.9' },
   { loc: '/moods', changefreq: 'weekly', priority: '0.8' },
+  { loc: '/country', changefreq: 'weekly', priority: '0.8' },
   { loc: '/blog', changefreq: 'weekly', priority: '0.9' },
   { loc: '/about', changefreq: 'monthly', priority: '0.7' },
   { loc: '/contact', changefreq: 'monthly', priority: '0.7' },
   { loc: '/privacy-policy', changefreq: 'yearly', priority: '0.5' },
   { loc: '/terms', changefreq: 'yearly', priority: '0.5' },
+  { loc: '/copyright', changefreq: 'yearly', priority: '0.5' },
   ...MOODS.map((m) => ({ loc: `/moods/${m.slug}`, changefreq: 'monthly', priority: '0.7' })),
+  ...COUNTRIES.map((c) => ({ loc: `/country/${c.code.toLowerCase()}`, changefreq: 'weekly', priority: '0.7' })),
 ];
 
 export async function GET() {

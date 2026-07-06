@@ -1,0 +1,69 @@
+---
+import Base from '../../layouts/Base.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import { COUNTRIES } from '../../scripts/countries';
+
+export const prerender = false;
+
+const SITE_URL = 'https://worldradiostations.org';
+const API = 'https://de1.api.radio-browser.info/json';
+const FETCH_HEADERS = { 'User-Agent': 'WorldRadioStations/1.0 (+https://worldradiostations.org)' };
+
+// Live station counts per country; the curated COUNTRIES list supplies stable
+// display names and acts as the fallback if the API is unavailable.
+const nameByCode = new Map(COUNTRIES.map((c) => [c.code, c.name]));
+let items: { code: string; name: string; count: number }[] = [];
+try {
+  const res = await fetch(`${API}/countries?hidebroken=true`, { headers: FETCH_HEADERS });
+  if (res.ok) {
+    const list = await res.json();
+    items = (Array.isArray(list) ? list : [])
+      .filter((c: any) => c?.iso_3166_1 && c.stationcount > 0)
+      .map((c: any) => {
+        const code = c.iso_3166_1.toUpperCase();
+        return { code, name: nameByCode.get(code) || c.name || code, count: c.stationcount };
+      })
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 250);
+  }
+} catch { /* graceful */ }
+if (!items.length) {
+  items = COUNTRIES.map((c) => ({ code: c.code, name: c.name, count: 0 }));
+}
+
+Astro.response.headers.set('Cache-Control', 'public, max-age=300, s-maxage=1800');
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: 'Radio stations by country',
+  description: 'Browse live radio stations by country and listen free online.',
+  inLanguage: 'en',
+  url: `${SITE_URL}/country`,
+};
+---
+<Base
+  title="Radio stations by country — World Radio Stations"
+  description="Browse live radio stations by country — news, music and talk from every part of the world, free to listen online in your browser."
+  jsonLd={jsonLd}
+>
+  <Breadcrumbs crumbs={[{ label: 'Home', href: '/' }, { label: 'Countries' }]} />
+
+  <section class="container blog-index">
+    <div class="section-head">
+      <h1>Radio stations by country</h1>
+      <p>Pick a country to hear its radio — every stream plays directly from the station’s own servers.</p>
+    </div>
+
+    <div class="facet-grid">
+      {items.map((c) => (
+        <a class="facet-card" href={`/country/${c.code.toLowerCase()}`}>
+          <span class="facet-name">{c.name}</span>
+          {c.count > 0 && <span class="facet-count">{c.count.toLocaleString('en')} stations</span>}
+        </a>
+      ))}
+    </div>
+
+    <p style="margin-top:2rem;"><a class="link-arrow" href="/moods">Discover by mood →</a></p>
+  </section>
+</Base>

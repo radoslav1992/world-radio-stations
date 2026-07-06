@@ -110,14 +110,33 @@ const jsonLdArr = [orgJsonLd, ...(jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [js
       <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script>
     */}
 
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-YTN8XCRQPB"></script>
+    <!-- Google tag (gtag.js) with Consent Mode v2.
+         Storage consent defaults to denied; the cookie banner upgrades it.
+         Must run before the gtag.js loader. -->
     <script is:inline>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
+      gtag('consent', 'default', {
+        ad_storage: 'denied',
+        ad_user_data: 'denied',
+        ad_personalization: 'denied',
+        analytics_storage: 'denied',
+        wait_for_update: 500,
+      });
+      try {
+        if (localStorage.getItem('wrs-consent-v1') === 'accept') {
+          gtag('consent', 'update', {
+            ad_storage: 'granted',
+            ad_user_data: 'granted',
+            ad_personalization: 'granted',
+            analytics_storage: 'granted',
+          });
+        }
+      } catch (e) {}
       gtag('js', new Date());
       gtag('config', 'G-YTN8XCRQPB');
     </script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-YTN8XCRQPB"></script>
 
     <title>{title}</title>
   </head>
@@ -138,6 +157,7 @@ const jsonLdArr = [orgJsonLd, ...(jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [js
         <nav class="site" id="main-nav">
           <a href="/" class:list={{ active: isActive('/') }}>Listen</a>
           <a href="/moods" class:list={{ active: path.startsWith('/moods') }}>Discover</a>
+          <a href="/country" class:list={{ active: path.startsWith('/country') }}>Countries</a>
           <a href="/favorites" class:list={{ active: isActive('/favorites') }}>Favorites</a>
           <a href="/history" class:list={{ active: isActive('/history') }}>History</a>
           <a href="/stations" class:list={{ active: path.startsWith('/stations') }}>Stations</a>
@@ -170,6 +190,7 @@ const jsonLdArr = [orgJsonLd, ...(jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [js
         </div>
         <div class="footer-col">
           <h4>Information</h4>
+          <a href="/country">Countries</a>
           <a href="/stations">Stations</a>
           <a href="/blog">Blog</a>
           <a href="/about">About</a>
@@ -181,6 +202,7 @@ const jsonLdArr = [orgJsonLd, ...(jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [js
           <h4>Legal</h4>
           <a href="/privacy-policy">Privacy</a>
           <a href="/terms">Terms</a>
+          <a href="/copyright">Content &amp; copyright</a>
         </div>
       </div>
       <div class="container footer-bottom">
@@ -197,8 +219,9 @@ const jsonLdArr = [orgJsonLd, ...(jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [js
         <div class="consent-text">
           <strong>This site uses cookies</strong>
           <p>
-            We only use technically necessary cookies to remember your choices
-            (player, favorites, view). Learn more in our
+            Necessary storage remembers your choices (player, favorites, view).
+            With your consent we also use Google Analytics to understand how the
+            site is used, and in future to show ads. Details in our
             <a href="/privacy-policy">Privacy Policy</a>.
           </p>
         </div>
@@ -219,6 +242,14 @@ const jsonLdArr = [orgJsonLd, ...(jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [js
         banner.hidden = false;
         const close = (value: 'accept' | 'reject') => {
           try { localStorage.setItem(KEY, value); } catch {}
+          if (value === 'accept') {
+            (window as any).gtag?.('consent', 'update', {
+              ad_storage: 'granted',
+              ad_user_data: 'granted',
+              ad_personalization: 'granted',
+              analytics_storage: 'granted',
+            });
+          }
           banner.hidden = true;
         };
         banner.querySelector('[data-consent-accept]')?.addEventListener('click', () => close('accept'));
