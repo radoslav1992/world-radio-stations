@@ -1,0 +1,172 @@
+---
+import Base from '../../layouts/Base.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import RadioPlayer from '../../components/RadioPlayer.astro';
+import { getCollection } from 'astro:content';
+import { COUNTRIES } from '../../scripts/countries';
+
+export const prerender = false;
+
+const SITE_URL = 'https://worldradiostations.org';
+const API = 'https://de1.api.radio-browser.info/json';
+const FETCH_HEADERS = { 'User-Agent': 'WorldRadioStations/1.0 (+https://worldradiostations.org)' };
+
+const { code = '' } = Astro.params;
+const cc = code.replace(/[^a-zA-Z]/g, '').slice(0, 2).toUpperCase();
+const def = COUNTRIES.find((c) => c.code === cc);
+
+// Top stations for the crawlable list (the embedded player loads its own).
+let stations: any[] = [];
+let totalCount = 0;
+try {
+  const res = await fetch(
+    `${API}/stations/bycountrycodeexact/${cc}?hidebroken=true&order=clickcount&reverse=true&limit=60`,
+    { headers: FETCH_HEADERS },
+  );
+  if (res.ok) {
+    const raw = await res.json();
+    const seen = new Set<string>();
+    for (const s of Array.isArray(raw) ? raw : []) {
+      const u = s?.url_resolved;
+      if (typeof u !== 'string' || !u.startsWith('https://') || seen.has(u)) continue;
+      seen.add(u);
+      stations.push(s);
+    }
+  }
+} catch { /* graceful */ }
+try {
+  const res = await fetch(`${API}/countries?hidebroken=true`, { headers: FETCH_HEADERS });
+  if (res.ok) {
+    const list = await res.json();
+    const m = Array.isArray(list)
+      ? list.find((c: any) => (c?.iso_3166_1 || '').toUpperCase() === cc)
+      : null;
+    totalCount = m?.stationcount || 0;
+  }
+} catch { /* graceful */ }
+
+const name = def?.name || stations[0]?.country || cc;
+
+if (!def && stations.length === 0) {
+  Astro.response.status = 404;
+}
+
+Astro.response.headers.set(
+  'Cache-Control',
+  Astro.response.status === 404 ? 'public, max-age=30' : 'public, max-age=300, s-maxage=1800',
+);
+
+const shown = stations.slice(0, 48);
+const related = COUNTRIES.filter((c) => c.code !== cc).slice(0, 12);
+
+// Directory entries that match an editorial station profile link internally.
+// Name-normalized and country-scoped so foreign namesakes can't collide.
+const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '');
+const profileSlugByName = new Map<string, string>();
+for (const p of await getCollection('stations')) {
+  if (p.data.country === name) profileSlugByName.set(norm(p.data.name), p.slug);
+}
+
+const stationTags = (s: any): string =>
+  (typeof s.tags === 'string' ? s.tags : '')
+    .split(',')
+    .map((t: string) => t.trim())
+    .filter(Boolean)
+    .slice(0, 3)
+    .join(', ');
+
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: `${name} radio stations`,
+    description: `Listen to radio stations from ${name} live online, free in your browser.`,
+    inLanguage: 'en',
+    url: `${SITE_URL}/country/${cc.toLowerCase()}`,
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_URL },
+      { '@type': 'ListItem', position: 2, name: 'Countries', item: `${SITE_URL}/country` },
+      { '@type': 'ListItem', position: 3, name: name },
+    ],
+  },
+  ...(shown.length
+    ? [{
+        '@context': 'https://schema.org',
+        '@type': 'ItemList',
+        numberOfItems: shown.length,
+        itemListElement: shown.map((s, i) => ({
+          '@type': 'ListItem',
+          position: i + 1,
+          name: s.name,
+          url: `${SITE_URL}/listen/${s.stationuuid}`,
+        })),
+      }]
+    : []),
+];
+---
+<Base
+  title={`${name} Radio Stations — Listen Live Online, Free | World Radio Stations`}
+  description={`Listen to ${totalCount ? `${totalCount.toLocaleString('en')} ` : ''}radio stations from ${name} live online — news, music and talk, free in your browser. No sign-up.`}
+  jsonLd={jsonLd}
+>
+  <Breadcrumbs crumbs={[
+    { label: 'Home', href: '/' },
+    { label: 'Countries', href: '/country' },
+    { label: name },
+  ]} />
+
+  <section class="container page-head">
+    <h1>{name} radio stations</h1>
+    <p class="page-sub">
+      Listen to live radio from {name} — free, straight in your browser.
+      {totalCount > 0 && ` ${totalCount.toLocaleString('en')} stations available right now.`}
+      Streams play directly from each station’s own servers.
+    </p>
+  </section>
+
+  <section class="container player-section">
+    <RadioPlayer countryDefault={cc} />
+  </section>
+
+  {shown.length > 0 && (
+    <section class="container">
+      <div class="section-head">
+        <h2>Top {name} stations</h2>
+        <p>The most-listened stations from {name} on World Radio Stations.</p>
+      </div>
+      <div class="facet-grid">
+        {shown.map((s) => {
+          const profileSlug = profileSlugByName.get(norm(s.name || ''));
+          const tags = stationTags(s);
+          return (
+            <a
+              class="facet-card"
+              href={profileSlug ? `/stations/${profileSlug}` : `/listen/${s.stationuuid}`}
+            >
+              <span class="facet-name">{s.name}</span>
+              <span class="facet-count">{profileSlug ? 'Profile & how to listen' : (tags || 'Listen live')}</span>
+            </a>
+          );
+        })}
+      </div>
+    </section>
+  )}
+
+  <section class="container">
+    <div class="section-head">
+      <h2>Other countries</h2>
+    </div>
+    <div class="facet-grid">
+      {related.map((c) => (
+        <a class="facet-card" href={`/country/${c.code.toLowerCase()}`}>
+          <span class="facet-name">{c.name}</span>
+        </a>
+      ))}
+    </div>
+    <p style="margin-top:1.5rem;"><a class="link-arrow" href="/country">All countries →</a></p>
+  </section>
+</Base>

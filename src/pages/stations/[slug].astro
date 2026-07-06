@@ -21,6 +21,45 @@ const similar = allStations
 
 const SITE_URL = 'https://worldradiostations.org';
 
+// One-sentence answer for the "which country / who owns / how to listen"
+// queries these pages rank for.
+const d = station.data;
+const quickAnswer = [
+  `${d.name} is a ${d.format.toLowerCase()} radio station from ${d.country}`,
+  d.owner ? `owned by ${d.owner}` : '',
+  d.founded ? `on air since ${d.founded}` : '',
+].filter(Boolean).join(', ') + '.';
+
+const faqJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: [
+    {
+      '@type': 'Question',
+      name: `Which country is ${d.name} from?`,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: `${d.name} is a radio station from ${d.country}${d.headquarters ? `, headquartered in ${d.headquarters}` : ''}. It broadcasts in ${d.language}.`,
+      },
+    },
+    ...(d.owner
+      ? [{
+          '@type': 'Question',
+          name: `Who owns ${d.name}?`,
+          acceptedAnswer: { '@type': 'Answer', text: `${d.name} is owned by ${d.owner}.` },
+        }]
+      : []),
+    {
+      '@type': 'Question',
+      name: `How can I listen to ${d.name}?`,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: `${d.name} is available via ${d.frequencies.length ? d.frequencies.join(', ') : 'online streaming'}.${d.website ? ` The official website is ${d.website}.` : ''}`,
+      },
+    },
+  ],
+};
+
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'RadioStation',
@@ -39,9 +78,9 @@ const jsonLd = {
 };
 ---
 <Base
-  title={`${station.data.name} — information, frequencies, history`}
+  title={`${station.data.name} — which country it’s from, frequencies & how to listen`}
   description={station.data.description}
-  jsonLd={jsonLd}
+  jsonLd={[jsonLd, faqJsonLd]}
 >
   <Breadcrumbs crumbs={[
     { label: 'Home', href: '/' },
@@ -51,6 +90,8 @@ const jsonLd = {
 
   <article class="container legal blog-post">
     <h1>{station.data.name}</h1>
+
+    <p><strong>{quickAnswer}</strong></p>
 
     <div class="station-infobox">
       <table>
