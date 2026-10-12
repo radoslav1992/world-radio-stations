@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { slimStation } from '../../lib/station-fields';
 
 export const prerender = false;
 
@@ -36,7 +37,7 @@ export const GET: APIRoute = async ({ url }) => {
     });
   }
 
-  return new Response(JSON.stringify(station), {
+  return new Response(JSON.stringify(slimStation(station)), {
     headers: {
       'Content-Type': 'application/json',
       'Cache-Control': 'public, max-age=3600',

@@ -17,6 +17,10 @@ interface Props {
   tags?: string;
   /** Whether to render the country filter. Hidden for tag-based mood pages. */
   showCountry?: boolean;
+  /** Plot the stations on the interactive 3D globe. */
+  globe?: boolean;
+  /** Label for the globe's scope chip (e.g. a mood name). */
+  scopeLabel?: string;
 }
 const {
   mode = 'browse',
@@ -25,68 +29,104 @@ const {
   countryDefault,
   tags,
   showCountry = mode === 'browse' && !tags,
+  globe = true,
+  scopeLabel,
 } = Astro.props;
 
+const hasIntro = Astro.slots.has('intro');
 const rootAttrs: Record<string, string> = {};
 if (autoplay) rootAttrs['data-autoplay'] = autoplay;
 if (countryDefault) rootAttrs['data-country-default'] = countryDefault;
 if (tags) rootAttrs['data-tags'] = tags;
+if (scopeLabel) rootAttrs['data-scope-label'] = scopeLabel;
 ---
-<div class="player" data-player data-mode={mode} {...rootAttrs}>
-  <div class="player-toolbar" style="display:none;">
-    {showCountry && (
-      <div class="country-filter">
-        <svg class="country-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-          <circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/>
-        </svg>
-        <select class="country-select" data-country aria-label="Filter stations by country"></select>
+<div class:list={['explorer', { 'has-globe': globe, 'has-intro': hasIntro }]} data-player data-mode={mode} {...rootAttrs}>
+  {hasIntro && <div class="explorer-intro"><slot name="intro" /></div>}
+  {globe && (
+    <div class="globe-stage" data-globe-stage>
+      <div class="globe-mount" data-globe role="img" aria-label="Interactive 3D globe showing where each radio station broadcasts from">
+        <div class="globe-placeholder" aria-hidden="true"><span></span></div>
       </div>
-    )}
-    {showSearch && (
-      <div class="player-search">
-        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>
-        </svg>
-        <input type="search" data-search placeholder="Search stations..." autocomplete="off" />
+      <div class="globe-scope" data-globe-scope>
+        <span class="scope-pulse" aria-hidden="true"></span>
+        <span class="scope-label" data-globe-scope-label>Tuning in…</span>
+        <button type="button" class="scope-clear" data-globe-clear hidden aria-label="Back to worldwide stations">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
       </div>
-    )}
-    {mode === 'browse' && (
-      <button class="surprise-btn" data-surprise type="button" aria-label="Play a random station">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-          <rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.3" fill="currentColor"/><circle cx="16" cy="16" r="1.3" fill="currentColor"/><circle cx="16" cy="8" r="1.3" fill="currentColor"/><circle cx="8" cy="16" r="1.3" fill="currentColor"/>
-        </svg>
-        <span>Surprise me</span>
-      </button>
-    )}
-    <span class="count" data-count></span>
-    <div class="view-toggle" role="tablist" aria-label="List view">
-      <button class="vt-btn" data-view="list" type="button" role="tab" aria-label="List">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="3" y1="6" x2="21" y2="6"/>
-          <line x1="3" y1="12" x2="21" y2="12"/>
-          <line x1="3" y1="18" x2="21" y2="18"/>
-        </svg>
-      </button>
-      <button class="vt-btn" data-view="grid" type="button" role="tab" aria-label="Grid">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="3" y="3" width="7" height="7"/>
-          <rect x="14" y="3" width="7" height="7"/>
-          <rect x="3" y="14" width="7" height="7"/>
-          <rect x="14" y="14" width="7" height="7"/>
-        </svg>
-      </button>
+      <p class="globe-help" data-globe-help>
+        <span>Drag to spin</span>
+        <span>Click a light to listen</span>
+        {showCountry && <span>Click a country to tune in</span>}
+      </p>
+      <div class="globe-zoom" role="group" aria-label="Globe zoom">
+        <button type="button" data-globe-zoom-in aria-label="Zoom in">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        </button>
+        <button type="button" data-globe-zoom-out aria-label="Zoom out">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M5 12h14"/></svg>
+        </button>
+        <button type="button" data-globe-reset aria-label="Show the whole world">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/></svg>
+        </button>
+      </div>
     </div>
+  )}
+
+  <div class="station-panel" data-panel>
+    <div class="player-toolbar" style="display:none;">
+      {showCountry && (
+        <label class="field country-filter">
+          <svg class="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>
+          </svg>
+          <select class="country-select" data-country aria-label="Filter stations by country"></select>
+        </label>
+      )}
+      {showSearch && (
+        <label class="field player-search">
+          <svg class="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>
+          </svg>
+          <input type="search" data-search placeholder="Search stations or genres" autocomplete="off" aria-label="Search stations" />
+        </label>
+      )}
+      <div class="toolbar-row">
+        <span class="count" data-count></span>
+        {mode === 'browse' && (
+          <button class="chip-btn surprise-btn" data-surprise type="button" aria-label="Play a random station">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/>
+            </svg>
+            <span>Surprise me</span>
+          </button>
+        )}
+        <div class="view-toggle" role="group" aria-label="Layout">
+          <button class="vt-btn" data-view="list" type="button" aria-label="List view">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/>
+            </svg>
+          </button>
+          <button class="vt-btn" data-view="grid" type="button" aria-label="Grid view">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/>
+              <rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    {mode === 'browse' && <div class="genre-filters" data-genres style="display:none;"></div>}
+
+    <div class="player-loading" data-status>
+      {mode === 'browse' && <div class="spinner"></div>}
+      <p>{mode === 'browse' ? 'Loading stations…' : ''}</p>
+    </div>
+
+    <div class="stations" data-stations></div>
+    <nav class="pager" data-pager aria-label="Pagination" style="display:none;"></nav>
   </div>
-
-  {mode === 'browse' && <div class="genre-filters" data-genres style="display:none;"></div>}
-
-  <div class="player-loading" data-status>
-    {mode === 'browse' && <div class="spinner"></div>}
-    <p>{mode === 'browse' ? 'Loading stations…' : ''}</p>
-  </div>
-
-  <div class="stations" data-stations></div>
-  <nav class="pager" data-pager aria-label="Pagination" style="display:none;"></nav>
 </div>
 
 <!-- Mini bar -->
@@ -99,125 +139,99 @@ if (tags) rootAttrs['data-tags'] = tags;
       <div class="np-state" data-np-state></div>
     </div>
   </div>
-  <button class="np-btn np-secondary" data-np-prev type="button" aria-label="Previous station">
-    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zM9.5 12l8.5 6V6z"/></svg>
-  </button>
-  <button class="np-btn np-primary" data-np-toggle type="button" aria-label="Play">
-    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-  </button>
-  <button class="np-btn np-secondary" data-np-next type="button" aria-label="Next station">
-    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 6h2v12h-2zM6 18l8.5-6L6 6z"/></svg>
-  </button>
-  <button class="np-btn np-expand" data-np-expand type="button" aria-label="Open player">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M4 14v6h6M20 10V4h-6M4 20l7-7M20 4l-7 7"/>
-    </svg>
-  </button>
+  <div class="np-controls">
+    <button class="np-btn np-secondary" data-np-prev type="button" aria-label="Previous station">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 6h2v12H6zM9.5 12l8.5 6V6z"/></svg>
+    </button>
+    <button class="np-btn np-primary" data-np-toggle type="button" aria-label="Play">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+    </button>
+    <button class="np-btn np-secondary" data-np-next type="button" aria-label="Next station">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16 6h2v12h-2zM6 18l8.5-6L6 6z"/></svg>
+    </button>
+    <button class="np-btn np-expand" data-np-expand type="button" aria-label="Open player">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
+    </button>
+  </div>
 </div>
 
-<!-- Big retro modal -->
+<!-- Full player sheet -->
 <div class="player-modal" data-modal role="dialog" aria-modal="true" aria-label="Player">
-  <div class="modal-radio">
-    <header class="modal-head">
-      <button class="modal-icon-btn" data-modal-close type="button" aria-label="Close">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-          <path d="M19 12H5M12 19l-7-7 7-7"/>
-        </svg>
+  <div class="sheet">
+    <header class="sheet-head">
+      <button class="icon-btn" data-modal-close type="button" aria-label="Close player">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
       </button>
-      <div class="modal-title">
-        <span class="brand-dot">❀</span>
-        WORLD RADIO
-      </div>
-      <button class="modal-icon-btn fav-modal" data-modal-fav type="button" aria-label="Add to favorites" aria-pressed="false">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 17.3l-5.4 3.2 1.4-6.1L3 10.4l6.2-.5L12 4l2.8 5.9 6.2.5-5 4 1.4 6.1z"/></svg>
+      <span class="sheet-eyebrow">Now playing</span>
+      <button class="icon-btn fav-modal" data-modal-fav type="button" aria-label="Add to favorites" aria-pressed="false">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 17.3l-5.4 3.2 1.4-6.1L3 10.4l6.2-.5L12 4l2.8 5.9 6.2.5-5 4 1.4 6.1z"/></svg>
       </button>
     </header>
 
-    <div class="grill"></div>
-
-    <div class="modal-logo-wrap">
+    <div class="sheet-art">
+      <div class="art-rings" aria-hidden="true"><span></span><span></span><span></span></div>
       <div class="modal-logo" data-modal-logo></div>
     </div>
 
-    <div class="dial">
-      <div class="dial-ticks" aria-hidden="true"></div>
-      <div class="dial-needle" aria-hidden="true"></div>
-      <div class="dial-name" data-modal-name></div>
-      <div class="dial-song" data-modal-song></div>
-      <div class="dial-lang" data-modal-lang></div>
+    <div class="sheet-meta">
+      <div class="modal-state" data-modal-state></div>
+      <h2 class="sheet-name" data-modal-name></h2>
+      <p class="sheet-song" data-modal-song></p>
+      <p class="sheet-place" data-modal-lang></p>
     </div>
 
-    <div class="modal-state" data-modal-state></div>
-
-    <div class="vu-frame">
-      <div class="vu" data-modal-vu>
-        <span style="--h:30%"></span>
-        <span style="--h:55%"></span>
-        <span style="--h:40%"></span>
-        <span style="--h:75%"></span>
-        <span style="--h:60%"></span>
-        <span style="--h:85%"></span>
-        <span style="--h:50%"></span>
-        <span style="--h:70%"></span>
-        <span style="--h:35%"></span>
-      </div>
+    <div class="vu" data-modal-vu aria-hidden="true">
+      <span style="--h:30%"></span><span style="--h:55%"></span><span style="--h:40%"></span>
+      <span style="--h:75%"></span><span style="--h:60%"></span><span style="--h:85%"></span>
+      <span style="--h:50%"></span><span style="--h:70%"></span><span style="--h:35%"></span>
+      <span style="--h:65%"></span><span style="--h:45%"></span><span style="--h:80%"></span>
     </div>
 
     <div class="tag-chips" data-modal-tags></div>
 
-    <div class="vote-row">
-      <button class="vote-btn" data-modal-vote type="button" aria-label="Vote for this station">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
-        <span data-vote-label>Vote</span>
-      </button>
-      <span class="vote-count" data-vote-count></span>
-      <button class="vote-btn" data-modal-share type="button" aria-label="Share">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-        <span data-share-label>Share</span>
-      </button>
-    </div>
-
     <div class="modal-controls">
       <button class="modal-step-btn" data-modal-prev type="button" aria-label="Previous station">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zM9.5 12l8.5 6V6z"/></svg>
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 6h2v12H6zM9.5 12l8.5 6V6z"/></svg>
       </button>
       <button class="big-btn" data-modal-toggle type="button" aria-label="Play">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
       </button>
       <button class="modal-step-btn" data-modal-next type="button" aria-label="Next station">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 6h2v12h-2zM6 18l8.5-6L6 6z"/></svg>
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16 6h2v12h-2zM6 18l8.5-6L6 6z"/></svg>
       </button>
     </div>
 
     <div class="volume-row">
-      <svg viewBox="0 0 24 24" fill="currentColor" class="vol-icon">
+      <svg viewBox="0 0 24 24" fill="currentColor" class="vol-icon" aria-hidden="true">
         <path d="M3 10v4h4l5 4V6L7 10H3z"/>
       </svg>
-      <input
-        type="range"
-        min="0"
-        max="1"
-        step="0.01"
-        data-modal-volume
-        aria-label="Volume"
-      />
-      <svg viewBox="0 0 24 24" fill="currentColor" class="vol-icon">
+      <input type="range" min="0" max="1" step="0.01" data-modal-volume aria-label="Volume" />
+      <svg viewBox="0 0 24 24" fill="currentColor" class="vol-icon" aria-hidden="true">
         <path d="M3 10v4h4l5 4V6L7 10H3zm11.5 2c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
       </svg>
     </div>
 
-    <div class="sleep-row">
-      <button class="sleep-btn" data-sleep-toggle type="button" aria-label="Sleep timer">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+    <div class="sheet-actions">
+      <button class="pill-btn" data-modal-vote type="button" aria-label="Vote for this station">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+        <span data-vote-label>Vote</span>
+        <span class="vote-count" data-vote-count></span>
+      </button>
+      <button class="pill-btn" data-modal-share type="button" aria-label="Share">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7M16 6l-4-4-4 4M12 2v13"/></svg>
+        <span data-share-label>Share</span>
+      </button>
+      <button class="pill-btn" data-sleep-toggle type="button" aria-label="Sleep timer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
         <span data-sleep-label>Timer</span>
       </button>
-      <div class="sleep-options" data-sleep-options hidden>
-        <button type="button" data-sleep-min="15">15 min</button>
-        <button type="button" data-sleep-min="30">30 min</button>
-        <button type="button" data-sleep-min="60">60 min</button>
-        <button type="button" data-sleep-min="90">90 min</button>
-        <button type="button" data-sleep-min="0">Off</button>
-      </div>
+    </div>
+    <div class="sleep-options" data-sleep-options hidden>
+      <button type="button" data-sleep-min="15">15 min</button>
+      <button type="button" data-sleep-min="30">30 min</button>
+      <button type="button" data-sleep-min="60">60 min</button>
+      <button type="button" data-sleep-min="90">90 min</button>
+      <button type="button" data-sleep-min="0">Off</button>
     </div>
   </div>
 </div>

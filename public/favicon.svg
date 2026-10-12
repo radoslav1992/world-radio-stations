@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#16244A"/>
+      <stop offset="1" stop-color="#070C1C"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="32" cy="32" r="24" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FF7A3D" stop-opacity="0.26"/>
+      <stop offset="1" stop-color="#FF7A3D" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="g" x1="10" y1="8" x2="54" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFC65C"/>
+      <stop offset="0.55" stop-color="#FF7A3D"/>
+      <stop offset="1" stop-color="#FF4D6D"/>
+    </linearGradient>
+    <mask id="m" maskUnits="userSpaceOnUse" x="0" y="0" width="64" height="64">
+      <rect width="64" height="64" fill="#fff"/>
+      <ellipse cx="32" cy="32" rx="6.2" ry="15" stroke="#000" stroke-width="2.8"/>
+      <path d="M16 32h32" stroke="#000" stroke-width="2.8"/>
+    </mask>
+  </defs>
+  <rect width="64" height="64" rx="15" fill="url(#bg)"/>
+  <circle cx="32" cy="32" r="24" fill="url(#glow)"/>
+  <circle cx="32" cy="32" r="15" fill="url(#g)" mask="url(#m)"/>
+  <g stroke="url(#g)" stroke-width="4.6" stroke-linecap="round">
+    <path d="M49.6 18.4A22 22 0 0 1 49.6 45.6"/>
+    <path d="M14.4 18.4A22 22 0 0 0 14.4 45.6"/>
+  </g>
+</svg>
