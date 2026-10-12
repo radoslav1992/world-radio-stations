@@ -35,7 +35,7 @@ const tags = (station.tags || '')
   .slice(0, 4);
 const meta = [country, tags.join(', ')].filter(Boolean).join(' · ');
 const description = `Listen to ${name} live online${meta ? ` — ${meta}` : ''}. Free streaming radio at World Radio Stations.`;
-const ogImage = typeof station.favicon === 'string' && station.favicon.startsWith('https://') ? station.favicon : '/logo.png';
+const ogImage = typeof station.favicon === 'string' && station.favicon.startsWith('https://') ? station.favicon : '/og.png';
 const countryCode = (station.countrycode || '').toUpperCase();
 
 const jsonLd = {

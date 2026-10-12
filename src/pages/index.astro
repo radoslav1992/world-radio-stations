@@ -16,8 +16,8 @@ const features = [
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 11h16M4 16h16M9 7l3-3 3 3"/><circle cx="8" cy="16" r="1.5" fill="currentColor"/></svg>',
   },
   {
-    title: 'Filter by country',
-    description: 'Pick a country and instantly browse its top stations — from the US and UK to Germany, France, Japan and beyond.',
+    title: 'Explore on a 3D globe',
+    description: 'Every station is a light on the map. Spin the globe, click a country to tune in, or tap any light to start listening.',
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/></svg>',
   },
   {
@@ -57,7 +57,7 @@ const faqs = [
   },
   {
     q: 'How do I filter stations by country?',
-    a: 'Use the country selector above the player. Pick any country and the list reloads with that country’s most popular stations, loading more as you scroll. Choose “Top stations (worldwide)” to see the most popular stations globally.',
+    a: 'Click any country on the globe, or pick one from the country selector next to it. The globe flies there and the list reloads with that country’s most popular stations. Choose “Worldwide — top stations” to see the most popular stations globally.',
   },
   {
     q: 'How much mobile data does it use?',
@@ -125,36 +125,22 @@ const topCountries = COUNTRIES.slice(0, 12);
   description="Listen to thousands of radio stations from around the world for free — pop, rock, jazz, news and more. Filter by country, right in your browser, no sign-up. Android app coming soon."
   jsonLd={jsonLd}
 >
-  <section class="hero container">
-    <img class="hero-logo" src="/logo.png" alt="World Radio Stations — logo" width="360" height="240" />
-    <h1 class="sr-only">World Radio Stations</h1>
-    <p class="tagline">
-      Listen to thousands of radio stations from around the world for free — pop, rock, jazz, news and more.
-      Filter by country, right in your browser, no sign-up.
-    </p>
-    <div class="hero-ctas">
-      <a class="cta" href="#player">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-        Listen online
-      </a>
-      <span class="cta cta-coming-soon" id="download">
-        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 20.5V3.5c0-.6.3-1.1.8-1.4L13.5 12 3.8 21.9c-.5-.3-.8-.8-.8-1.4zm10.6-8.5l2.5-2.5L5.5 3.4c-.3-.2-.6-.3-.9-.3l9 8.9zm6.5-3.7L17.5 9.7l-2.7 2.3 2.7 2.3 2.6-1.4c.8-.5.8-1.7 0-2.1zM4.6 20.9c.3 0 .6-.1.9-.3l10.6-6.1-2.5-2.5-9 8.9z"/></svg>
-        Android — coming soon
-      </span>
-    </div>
-    <ul class="trust-row" aria-label="Quick facts">
-      <li><strong>1000s</strong> of stations</li>
-      <li><strong>$0</strong> free</li>
-      <li><strong>No</strong> sign-up</li>
-    </ul>
-  </section>
-
-  <section id="player" class="container player-section">
-    <div class="section-head">
-      <h2>Listen live</h2>
-      <p>Real radio stations from around the world, right in your browser — no install, no sign-up.</p>
-    </div>
-    <RadioPlayer />
+  <section id="player" class="container hero">
+    <RadioPlayer>
+      <div slot="intro" class="hero-intro">
+        <p class="eyebrow"><span class="live-dot" aria-hidden="true"></span> Live radio from 200+ countries</p>
+        <h1>Spin the globe.<br /><span class="text-gradient">Tune in anywhere.</span></h1>
+        <p class="tagline">
+          Thousands of live radio stations, each one a light on the map — pop, rock, jazz, news and more.
+          Free in your browser, no sign-up.
+        </p>
+        <ul class="trust-row" aria-label="Quick facts">
+          <li><strong>1000s</strong> of stations</li>
+          <li><strong>$0</strong> free forever</li>
+          <li><strong>No</strong> sign-up</li>
+        </ul>
+      </div>
+    </RadioPlayer>
   </section>
 
   <section id="features" class="container">
@@ -198,7 +184,7 @@ const topCountries = COUNTRIES.slice(0, 12);
         </a>
       ))}
     </div>
-    <div style="text-align:center; margin-top:1.5rem;">
+    <div class="section-more">
       <a class="link-arrow" href="/country">All countries →</a>
     </div>
   </section>
@@ -223,7 +209,7 @@ const topCountries = COUNTRIES.slice(0, 12);
         </a>
       ))}
     </div>
-    <div style="text-align:center; margin-top:1.5rem;">
+    <div class="section-more">
       <a class="link-arrow" href="/blog">All articles →</a>
     </div>
   </section>
@@ -243,18 +229,20 @@ const topCountries = COUNTRIES.slice(0, 12);
     </div>
   </section>
 
-  <section class="container cta-section">
+  <section class="container">
+   <div class="cta-section">
     <h2>Ready to listen?</h2>
-    <p>Play your favorite station right in your browser — free and without sign-up.</p>
+    <p>Spin the globe and play any station right in your browser — free and without sign-up.</p>
     <div class="hero-ctas">
       <a class="cta" href="#player">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-        Listen online
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+        Start listening
       </a>
-      <span class="cta cta-coming-soon">
+      <span class="cta cta-coming-soon" id="download">
         <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 20.5V3.5c0-.6.3-1.1.8-1.4L13.5 12 3.8 21.9c-.5-.3-.8-.8-.8-1.4zm10.6-8.5l2.5-2.5L5.5 3.4c-.3-.2-.6-.3-.9-.3l9 8.9zm6.5-3.7L17.5 9.7l-2.7 2.3 2.7 2.3 2.6-1.4c.8-.5.8-1.7 0-2.1zM4.6 20.9c.3 0 .6-.1.9-.3l10.6-6.1-2.5-2.5-9 8.9z"/></svg>
         Android — coming soon
       </span>
     </div>
+   </div>
   </section>
 </Base>

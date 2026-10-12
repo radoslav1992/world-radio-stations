@@ -7,7 +7,8 @@ import {
   isFavorite,
   toggleFavorite,
 } from './store';
-import { COUNTRIES } from './countries';
+import { ALL_COUNTRY_CODES, COUNTRIES, countryName } from './countries';
+import type { RadioGlobe } from './globe/globe';
 
 const API_STATIONS = '/api/stations';
 const API_STATION = '/api/station';
@@ -37,6 +38,7 @@ const GENRE_MAP: Record<string, string> = {
 type View = 'list' | 'grid';
 type Mode = 'browse' | 'favorites' | 'history';
 type PlayState = 'playing' | 'paused' | 'loading' | 'error';
+type PlayOrigin = 'list' | 'globe';
 
 class Player {
   private mode: Mode;
@@ -65,6 +67,13 @@ class Player {
   private autoplayUuid = '';
   private forcedCountry: string | null = null;
   private loadToken = 0;
+
+  // Globe
+  private globe: RadioGlobe | null = null;
+  private panelEl: HTMLElement;
+  private scopeLabelEl: HTMLElement | null;
+  private scopeClearBtn: HTMLButtonElement | null;
+  private scopeName: string;
 
   // Sleep timer
   private sleepTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -114,6 +123,10 @@ class Player {
     this.pagerEl = root.querySelector<HTMLElement>('[data-pager]');
     this.viewButtons = root.querySelectorAll<HTMLButtonElement>('.vt-btn');
     this.countrySelect = root.querySelector<HTMLSelectElement>('[data-country]');
+    this.panelEl = root.querySelector<HTMLElement>('[data-panel]') || root;
+    this.scopeLabelEl = root.querySelector<HTMLElement>('[data-globe-scope-label]');
+    this.scopeClearBtn = root.querySelector<HTMLButtonElement>('[data-globe-clear]');
+    this.scopeName = root.dataset.scopeLabel || '';
 
     this.tags = root.dataset.tags || '';
     this.forcedCountry = root.dataset.countryDefault ?? null;
@@ -159,6 +172,7 @@ class Player {
     const savedVol = parseFloat(localStorage.getItem(VOLUME_KEY) || '0.8');
     this.audio.volume = isNaN(savedVol) ? 0.8 : savedVol;
     this.modalVolume.value = String(this.audio.volume);
+    this.paintVolume();
 
     this.audio.addEventListener('playing', () => this.setState('playing'));
     this.audio.addEventListener('pause', () => this.setState('paused'));
@@ -196,6 +210,7 @@ class Player {
     this.modalVolume.addEventListener('input', () => {
       const v = parseFloat(this.modalVolume.value);
       this.audio.volume = v;
+      this.paintVolume();
       localStorage.setItem(VOLUME_KEY, String(v));
     });
 
@@ -255,12 +270,17 @@ class Player {
 
     // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
-      if ((e.target as HTMLElement).tagName === 'INPUT') return;
+      const target = e.target as HTMLElement;
+      if (['INPUT', 'SELECT', 'TEXTAREA'].includes(target.tagName) || target.isContentEditable) return;
+      if (e.key === ' ' && (target.tagName === 'BUTTON' || target.tagName === 'A' || target.getAttribute('role') === 'button')) return;
       if (e.key === ' ' && !this.modal.classList.contains('visible')) { e.preventDefault(); this.toggle(); }
       if (e.key === 'ArrowLeft') this.step(-1);
       if (e.key === 'ArrowRight') this.step(1);
       if (e.key === 'm' || e.key === 'M') { this.audio.muted = !this.audio.muted; }
     });
+
+    const globeMount = root.querySelector<HTMLElement>('[data-globe]');
+    if (globeMount) void this.initGlobe(globeMount);
 
     document.addEventListener(STORE_EVENT, (e) => {
       const detail = (e as CustomEvent).detail as { kind: string };
@@ -289,12 +309,14 @@ class Player {
       this.all = this.mode === 'favorites' ? getFavorites() : getHistory().map((e) => e.station);
       if (this.all.length === 0) {
         this.showEmpty();
+        this.updateScope();
         return;
       }
       this.statusEl.style.display = 'none';
       this.showToolbar();
       this.restoreLast();
       this.applyFilter();
+      this.syncGlobe(true);
     } catch (err) {
       console.error(err);
       this.showError('We couldn’t load the stations.');
@@ -308,10 +330,37 @@ class Player {
 
   private buildCountrySelect() {
     if (!this.countrySelect) return;
-    const opts = ['<option value="">Top stations (worldwide)</option>']
-      .concat(COUNTRIES.map((c) => `<option value="${escapeAttr(c.code)}">${escapeHtml(c.name)}</option>`));
-    this.countrySelect.innerHTML = opts.join('');
+    const popular = new Set(COUNTRIES.map((c) => c.code));
+    const rest = ALL_COUNTRY_CODES
+      .filter((code) => !popular.has(code))
+      .map((code) => ({ code, name: countryName(code) }))
+      .sort((a, b) => a.name.localeCompare(b.name, 'en'));
+    const option = (c: { code: string; name: string }) =>
+      `<option value="${escapeAttr(c.code)}">${escapeHtml(c.name)}</option>`;
+    this.countrySelect.innerHTML = '<option value="">Worldwide — top stations</option>'
+      + `<optgroup label="Popular">${COUNTRIES.map(option).join('')}</optgroup>`
+      + `<optgroup label="All countries">${rest.map(option).join('')}</optgroup>`;
+    this.ensureCountryOption(this.country);
     this.countrySelect.value = this.country;
+  }
+
+  /** Make sure a country picked on the globe (or saved earlier) exists in the select. */
+  private ensureCountryOption(code: string) {
+    if (!this.countrySelect || !code) return;
+    if ([...this.countrySelect.options].some((o) => o.value === code)) return;
+    const opt = document.createElement('option');
+    opt.value = code;
+    opt.textContent = countryName(code);
+    this.countrySelect.appendChild(opt);
+  }
+
+  /** Select a country from outside the dropdown (globe click, scope chip). */
+  private selectCountry(code: string) {
+    if (!this.countrySelect || code === this.country) return;
+    this.ensureCountryOption(code);
+    this.countrySelect.value = code;
+    if (this.searchEl) this.searchEl.value = '';
+    void this.loadCountry(code);
   }
 
   /** Switch country (empty code = worldwide top) and reload. */
@@ -332,6 +381,11 @@ class Player {
     if (this.pagerEl) { this.pagerEl.innerHTML = ''; this.pagerEl.style.display = 'none'; }
     this.statusEl.style.display = '';
     this.statusEl.innerHTML = '<div class="spinner"></div><p>Loading stations…</p>';
+    this.updateScope(true);
+    this.globe?.setSelectedCountry(this.selectedCountryCode());
+    // Start flying to the country while its stations load.
+    const flewEarly = !!(this.globe && this.selectedCountryCode());
+    if (flewEarly) this.globe!.focusCountry(this.country);
 
     let list: Station[];
     try {
@@ -351,11 +405,13 @@ class Player {
       if (this.genreContainer) { this.genreContainer.style.display = 'none'; this.genreContainer.innerHTML = ''; }
       this.filtered = [];
       this.updateCount(1);
+      this.syncGlobe(!flewEarly);
       return;
     }
     this.buildGenreFilters();
     if (!this.autoplayUuid) this.restoreLast();
     this.applyFilter();
+    this.syncGlobe(!flewEarly);
   }
 
   /** Fetch the full station list for the current country/tags in one request. */
@@ -393,6 +449,7 @@ class Player {
     this.showNowPlaying(s, 'paused');
     this.updateNavButtons();
     this.goToStation(s);
+    this.globe?.focusStation(s, { zoom: true });
     try { localStorage.setItem(STORAGE_KEY, s.stationuuid); } catch { /* ignore */ }
     // Attempt autoplay; browsers may block it without a user gesture, in which
     // case the station stays cued (paused) for the user to press play.
@@ -425,6 +482,7 @@ class Player {
   private reloadFromStore() {
     if (this.mode === 'favorites') this.all = getFavorites();
     else if (this.mode === 'history') this.all = getHistory().map((e) => e.station);
+    this.syncGlobe(false);
     if (this.all.length === 0) {
       this.showEmpty();
       const toolbar = document.querySelector<HTMLElement>('.player-toolbar');
@@ -457,6 +515,13 @@ class Player {
     this.page = 1;
     this.renderPage();
     this.updateNavButtons();
+    this.globe?.setFilter(this.filterIds());
+  }
+
+  /** Ids of the stations passing the search/genre filter, or null when nothing is filtered out. */
+  private filterIds(): Set<string> | null {
+    if (this.filtered.length === this.all.length) return null;
+    return new Set(this.filtered.map((s) => s.stationuuid));
   }
 
   private stationMatchesGenre(s: Station, genre: string): boolean {
@@ -540,7 +605,7 @@ class Player {
   private updateMediaSession() {
     if (!('mediaSession' in navigator) || !this.current) return;
     const s = this.current;
-    const place = (s.country || s.language || '').trim();
+    const place = (countryName(s.countrycode) || s.country || s.language || '').trim();
     const artwork = s.favicon && s.favicon.startsWith('https://')
       ? [
           { src: s.favicon, sizes: '96x96', type: 'image/png' },
@@ -625,7 +690,7 @@ class Player {
     this.updateCount(totalPages);
     this.updateActiveCard(this.current && !this.audio.paused ? this.current.stationuuid : null);
     if (scroll) {
-      const top = this.rootEl.getBoundingClientRect().top + window.scrollY - 12;
+      const top = this.panelEl.getBoundingClientRect().top + window.scrollY - 84;
       window.scrollTo({ top, behavior: 'smooth' });
     }
   }
@@ -672,8 +737,8 @@ class Player {
     const fav = isFavorite(s.stationuuid);
     const votes = s.votes > 0 ? `<span class="station-votes" title="${s.votes} votes">★ ${s.votes}</span>` : '';
     const bitrate = s.bitrate > 0 ? `<span class="station-bitrate">${s.bitrate} kbps</span>` : '';
-    const place = (s.country || '').trim();
-    const placeChip = this.mode === 'browse' && place ? `<span class="station-bitrate">${escapeHtml(place)}</span>` : '';
+    const place = countryName(s.countrycode) || (s.country || '').trim();
+    const placeChip = this.mode === 'browse' && place ? `<span class="station-place">${escapeHtml(place)}</span>` : '';
     card.innerHTML = `
       <div class="station-logo">${logo}</div>
       <div class="station-meta">
@@ -695,6 +760,11 @@ class Player {
         this.play(s);
       }
     });
+    const id = s.stationuuid;
+    card.addEventListener('mouseenter', () => this.globe?.setListHover(id));
+    card.addEventListener('mouseleave', () => this.globe?.setListHover(null));
+    card.addEventListener('focus', () => this.globe?.setListHover(id));
+    card.addEventListener('blur', () => this.globe?.setListHover(null));
     const favBtn = card.querySelector<HTMLButtonElement>('[data-fav]')!;
     favBtn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -731,8 +801,9 @@ class Player {
     this.statusEl.innerHTML = `<p>${escapeHtml(msg)}<br>Please try again or check your internet connection.</p>`;
   }
 
-  private play(s: Station) {
+  private play(s: Station, origin: PlayOrigin = 'list') {
     if (this.current?.stationuuid === s.stationuuid && !this.audio.paused) {
+      if (origin === 'globe') return;
       this.audio.pause();
       return;
     }
@@ -741,6 +812,7 @@ class Player {
     void this.audio.play().catch(() => this.setState('error'));
     this.showNowPlaying(s, 'loading');
     this.goToStation(s);
+    if (origin !== 'globe') this.globe?.focusStation(s);
     localStorage.setItem(STORAGE_KEY, s.stationuuid);
     addToHistory(s);
     this.updateNavButtons();
@@ -811,11 +883,12 @@ class Player {
     this.npName.textContent = s.name;
     this.modalLogo.innerHTML = logoHtml;
     this.modalName.textContent = s.name;
-    this.modalLang.textContent = s.country || s.language || '';
+    this.modalLang.textContent = countryName(s.countrycode) || s.country || s.language || '';
     this.renderTags(s);
     this.refreshFavStars();
     this.updateVoteDisplay(s);
     this.updateMediaSession();
+    this.globe?.setActive(s);
     this.setState(state);
   }
 
@@ -897,6 +970,82 @@ class Player {
     }
   }
 
+  private paintVolume() {
+    this.modalVolume.style.setProperty('--vol', `${Math.round(this.audio.volume * 100)}%`);
+  }
+
+  private selectedCountryCode(): string | null {
+    return this.countrySelect && this.country ? this.country : null;
+  }
+
+  /** Lazy-load the WebGL globe; the list keeps working if it can't start. */
+  private async initGlobe(mount: HTMLElement) {
+    const stage = mount.closest<HTMLElement>('[data-globe-stage]');
+    try {
+      const { RadioGlobe } = await import('./globe/globe');
+      this.globe = new RadioGlobe({
+        container: mount,
+        reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+        onStationClick: (s) => this.play(s, 'globe'),
+        onCountryClick: this.countrySelect ? (code) => this.selectCountry(code) : undefined,
+        onInteract: () => stage?.classList.add('interacted'),
+      });
+    } catch (err) {
+      console.warn('Globe unavailable:', err);
+      this.rootEl.classList.add('no-globe');
+      return;
+    }
+    stage?.classList.add('ready');
+    stage?.querySelector('[data-globe-zoom-in]')?.addEventListener('click', () => this.globe?.zoom(0.7));
+    stage?.querySelector('[data-globe-zoom-out]')?.addEventListener('click', () => this.globe?.zoom(1.45));
+    stage?.querySelector('[data-globe-reset]')?.addEventListener('click', () => this.globe?.focusWorld());
+    this.scopeClearBtn?.addEventListener('click', () => this.selectCountry(''));
+    this.globe.setSelectedCountry(this.selectedCountryCode());
+    this.globe.setActive(this.current);
+    this.globe.setPlaying(this.state === 'playing' || this.state === 'loading');
+    if (this.all.length) this.syncGlobe(true, false);
+  }
+
+  /** Push the current station set (and optionally the camera focus) to the globe. */
+  private syncGlobe(refocus: boolean, animate = true) {
+    this.updateScope();
+    const g = this.globe;
+    if (!g) return;
+    g.setStations(this.all);
+    g.setFilter(this.filterIds());
+    g.setSelectedCountry(this.selectedCountryCode());
+    g.setActive(this.current);
+    if (!refocus) return;
+    if (this.autoplayUuid && this.current?.stationuuid === this.autoplayUuid) {
+      g.focusStation(this.current, { zoom: true });
+    } else if (this.selectedCountryCode()) {
+      g.focusCountry(this.country, animate);
+    } else if (this.mode !== 'browse' || this.tags) {
+      g.focusWorld({ centerOnStations: true, animate });
+    } else if (animate) {
+      g.focusWorld();
+    }
+  }
+
+  /** Text on the globe's scope chip, e.g. "Germany · 412 stations". */
+  private updateScope(loading = false) {
+    if (!this.scopeLabelEl) return;
+    const scope = this.mode === 'favorites'
+      ? 'Your favorites'
+      : this.mode === 'history'
+        ? 'Recently played'
+        : this.selectedCountryCode()
+          ? countryName(this.country)
+          : this.tags
+            ? (this.scopeName || 'This collection')
+            : 'Worldwide top stations';
+    const n = this.all.length;
+    this.scopeLabelEl.textContent = loading
+      ? `${scope} · tuning in…`
+      : `${scope} · ${n.toLocaleString('en')} station${n === 1 ? '' : 's'}`;
+    if (this.scopeClearBtn) this.scopeClearBtn.hidden = !this.selectedCountryCode();
+  }
+
   private setState(state: PlayState) {
     this.state = state;
     const label =
@@ -916,6 +1065,9 @@ class Player {
     this.npToggle.setAttribute('aria-label', ariaLabel);
     this.modalToggle.setAttribute('aria-label', ariaLabel);
     this.modalVu.classList.toggle('animating', state === 'playing');
+    this.nowPlaying.classList.toggle('is-playing', state === 'playing');
+    this.modal.classList.toggle('is-playing', state === 'playing');
+    this.globe?.setPlaying(state === 'playing' || state === 'loading');
     if ('mediaSession' in navigator) {
       navigator.mediaSession.playbackState =
         state === 'playing' ? 'playing' : state === 'loading' ? 'playing' : 'paused';

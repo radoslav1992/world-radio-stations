@@ -16,6 +16,9 @@ export interface Station {
   state: string;
   language: string;
   votes: number;
+  /** Coordinates from Radio Browser; absent/null when the station has no geo info. */
+  geo_lat?: number | null;
+  geo_long?: number | null;
 }
 
 export interface HistoryEntry {

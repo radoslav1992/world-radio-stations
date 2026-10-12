@@ -1,8 +1,10 @@
-const CACHE_VERSION = 'world-radio-v2';
+const CACHE_VERSION = 'world-radio-v3';
 const APP_SHELL = [
   '/',
-  '/logo.png',
+  '/logo.svg',
+  '/logo-mark.svg',
   '/logo-mark.png',
+  '/favicon.svg',
   '/favicon.png',
   '/manifest.json',
 ];
@@ -46,6 +48,23 @@ self.addEventListener('fetch', (event) => {
     url.pathname.endsWith('.ogg')
   ) {
     event.respondWith(fetch(request));
+    return;
+  }
+
+  // Network-first for pages so design/content updates show up immediately;
+  // fall back to the cached copy when offline.
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response.ok && url.origin === self.location.origin) {
+            const clone = response.clone();
+            caches.open(CACHE_VERSION).then((cache) => cache.put(request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match(request).then((cached) => cached || caches.match('/')))
+    );
     return;
   }
 

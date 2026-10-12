@@ -38,7 +38,7 @@ const otherMoods = MOODS.filter((m) => m.slug !== mood.slug);
   </section>
 
   <section class="container player-section">
-    <RadioPlayer tags={mood.tag} />
+    <RadioPlayer tags={mood.tag} scopeLabel={mood.title} />
   </section>
 
   <section class="container">

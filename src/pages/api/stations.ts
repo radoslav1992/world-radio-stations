@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { slimStation } from '../../lib/station-fields';
 
 export const prerender = false;
 
@@ -54,7 +55,7 @@ export const GET: APIRoute = async ({ url }) => {
     const u = s.url_resolved;
     if (!u || !u.startsWith('https://') || seenUrl.has(u)) continue;
     seenUrl.add(u);
-    deduped.push(s);
+    deduped.push(slimStation(s));
   }
 
   return new Response(JSON.stringify(deduped), {
