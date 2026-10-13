@@ -7,6 +7,7 @@ frequencies: ["Nationwide FM and AM network across Spain", "Online streaming and
 website: "https://www.cope.es"
 language: "Spanish"
 country: "Spain"
+playerSearch: "COPE"
 ---
 
 Cadena COPE is one of Spain's largest national radio networks, offering a generalist schedule of news, opinion, entertainment and sport. Its name derives from "Cadena de Ondas Populares Españolas", and it is distinguished among the big Spanish networks by its ownership links to the Catholic Church.

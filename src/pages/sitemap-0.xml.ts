@@ -1,24 +1,25 @@
 import { getCollection } from 'astro:content';
 import { MOODS } from '../data/moods';
-import { COUNTRIES } from '../scripts/countries';
+import { SITE } from '../lib/sitemap';
 
 export const prerender = true;
 
-const SITE = 'https://worldradiostations.org';
-
+// Country and /listen pages are live data; they're listed in the
+// server-rendered sitemap-countries.xml and sitemap-listen.xml.
+// No <lastmod> on pages without a real modification date: stamping every URL
+// with the build date teaches Google to ignore the field altogether.
 const staticPages = [
-  { loc: '/', changefreq: 'weekly', priority: '1.0' },
-  { loc: '/stations', changefreq: 'weekly', priority: '0.9' },
-  { loc: '/moods', changefreq: 'weekly', priority: '0.8' },
-  { loc: '/country', changefreq: 'weekly', priority: '0.8' },
-  { loc: '/blog', changefreq: 'weekly', priority: '0.9' },
-  { loc: '/about', changefreq: 'monthly', priority: '0.7' },
-  { loc: '/contact', changefreq: 'monthly', priority: '0.7' },
-  { loc: '/privacy-policy', changefreq: 'yearly', priority: '0.5' },
-  { loc: '/terms', changefreq: 'yearly', priority: '0.5' },
-  { loc: '/copyright', changefreq: 'yearly', priority: '0.5' },
-  ...MOODS.map((m) => ({ loc: `/moods/${m.slug}`, changefreq: 'monthly', priority: '0.7' })),
-  ...COUNTRIES.map((c) => ({ loc: `/country/${c.code.toLowerCase()}`, changefreq: 'weekly', priority: '0.7' })),
+  '/',
+  '/stations',
+  '/moods',
+  '/country',
+  '/blog',
+  '/about',
+  '/contact',
+  '/privacy-policy',
+  '/terms',
+  '/copyright',
+  ...MOODS.map((m) => `/moods/${m.slug}`),
 ];
 
 export async function GET() {
@@ -27,41 +28,23 @@ export async function GET() {
     getCollection('stations'),
   ]);
 
-  const blogEntries = posts
-    .sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime())
-    .map((post) => ({
-      loc: `/blog/${post.slug}`,
-      lastmod: post.data.updated || post.data.date,
-      changefreq: 'monthly',
-      priority: '0.8',
-    }));
-
-  const stationEntries = stations
-    .sort((a, b) => a.data.name.localeCompare(b.data.name, 'en'))
-    .map((s) => ({
-      loc: `/stations/${s.slug}`,
-      lastmod: new Date().toISOString().split('T')[0],
-      changefreq: 'monthly',
-      priority: '0.8',
-    }));
-
-  const allEntries = [
-    ...staticPages.map((p) => ({ ...p, lastmod: new Date().toISOString().split('T')[0] })),
-    ...stationEntries,
-    ...blogEntries,
+  const entries: { loc: string; lastmod?: string }[] = [
+    ...staticPages.map((loc) => ({ loc })),
+    ...stations
+      .sort((a, b) => a.data.name.localeCompare(b.data.name, 'en'))
+      .map((s) => ({ loc: `/stations/${s.slug}` })),
+    ...posts
+      .sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime())
+      .map((post) => ({ loc: `/blog/${post.slug}`, lastmod: post.data.updated || post.data.date })),
   ];
 
   const body = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${allEntries
-  .map(
-    (e) => `  <url>
-    <loc>${SITE}${e.loc}</loc>
-    <lastmod>${e.lastmod}</lastmod>
-    <changefreq>${e.changefreq}</changefreq>
-    <priority>${e.priority}</priority>
-  </url>`
-  )
+${entries
+  .map((e) => `  <url>
+    <loc>${SITE}${e.loc}</loc>${e.lastmod ? `
+    <lastmod>${e.lastmod}</lastmod>` : ''}
+  </url>`)
   .join('\n')}
 </urlset>`;
 

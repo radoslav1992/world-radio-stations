@@ -9,6 +9,7 @@ frequencies: ["Austria-wide FM", "DAB+ digital radio", "Online streaming"]
 website: "https://oe3.orf.at"
 language: "German"
 country: "Austria"
+playerSearch: "Ö3"
 ---
 
 Hitradio Ö3 is the nationwide pop music channel of the Austrian public broadcaster ORF. Broadcasting from Vienna, it combines current chart hits with news, traffic services and entertainment, and has for decades been the most listened-to radio station in Austria.

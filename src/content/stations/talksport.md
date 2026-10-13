@@ -9,6 +9,18 @@ frequencies: ["UK 1053/1089 AM (MW)", "DAB digital radio", "Online and via the t
 website: "https://www.talksport.com"
 language: "English"
 country: "United Kingdom"
+metaTitle: "talkSPORT Frequency: 1089 & 1053 AM, DAB — Listen Live"
+metaDescription: "talkSPORT is on 1089 and 1053 kHz AM (medium wave), national DAB and online — it has no FM frequency. Listen live and see every way to tune in."
+playerSearch: "talksport"
+faq:
+  - q: "What frequency is talkSPORT on?"
+    a: "talkSPORT broadcasts on medium wave (AM) on 1089 kHz and 1053 kHz across most of the UK, with 1071 kHz and 1107 kHz filling in some areas. It is also on national DAB digital radio and streams online and in the talkSPORT app."
+  - q: "Is talkSPORT on FM?"
+    a: "No. talkSPORT has no FM frequency — its analogue service is AM (medium wave) only, on 1089 kHz and 1053 kHz. For better sound, listen on DAB or stream it online."
+  - q: "What DAB channel is talkSPORT on?"
+    a: "talkSPORT is on the national Digital One multiplex: block 11D (222.064 MHz) across most of the UK and block 12A (223.936 MHz) in Scotland. You don't need to enter a frequency on a DAB radio — run a station scan and pick talkSPORT from the list."
+  - q: "How do I get talkSPORT in the car?"
+    a: "Tune the car radio to 1089 or 1053 on AM/MW, or choose talkSPORT from the station list if your car has DAB. You can also stream it from your phone."
 ---
 
 talkSPORT is the United Kingdom's biggest commercial sports radio station, broadcasting sports news, opinionated talk shows, phone-ins and live commentary nationwide. It is owned by News UK through its Wireless division.

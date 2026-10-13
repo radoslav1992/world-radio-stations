@@ -26,6 +26,14 @@ const stations = defineCollection({
     language: z.string().default('English'),
     country: z.string().default('United States'),
     slogan: z.string().optional(),
+    /** <title> override, for stations searched by a specific frequency. */
+    metaTitle: z.string().optional(),
+    /** Meta description override (otherwise built from the frequencies). */
+    metaDescription: z.string().optional(),
+    /** Term the embedded player filters by, when the Radio Browser name differs. */
+    playerSearch: z.string().optional(),
+    /** Station-specific questions, shown on the page and in the FAQ markup. */
+    faq: z.array(z.object({ q: z.string(), a: z.string() })).default([]),
   }),
 });
 

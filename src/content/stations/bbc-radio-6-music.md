@@ -9,6 +9,10 @@ frequencies: ["DAB digital radio", "Online via BBC Sounds"]
 website: "https://www.bbc.co.uk/6music"
 language: "English"
 country: "United Kingdom"
+metaTitle: "BBC Radio 6 Music Frequency — DAB, Online & How to Listen"
+faq:
+  - q: "What frequency is BBC Radio 6 Music on?"
+    a: "BBC Radio 6 Music has no FM or AM frequency — it is a digital-only station. Listen on DAB digital radio, online via BBC Sounds, or on digital TV."
 ---
 
 BBC Radio 6 Music is the BBC's digital-only network dedicated to alternative music. Its playlist ranges across indie, rock, electronic, soul, funk, hip hop and experimental music, drawing heavily on the BBC's session archive alongside new releases.

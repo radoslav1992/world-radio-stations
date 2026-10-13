@@ -15,14 +15,14 @@ const jsonLd = [
   {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
-    name: 'World radio stations — directory',
-    description: 'A directory of notable radio stations from around the world — history, format, frequencies and useful information.',
+    name: 'Famous radio stations around the world',
+    description: 'Guides to well-known radio stations from around the world — frequencies, history, owners and how to listen live.',
     inLanguage: 'en',
   },
   {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
-    name: 'World radio stations',
+    name: 'Famous radio stations',
     numberOfItems: stations.length,
     itemListElement: stations.map((s, i) => ({
       '@type': 'ListItem',
@@ -34,8 +34,8 @@ const jsonLd = [
 ];
 ---
 <Base
-  title="World radio stations — directory"
-  description="A directory of notable radio stations from around the world — history, ownership, format, frequencies and programming."
+  title="Famous Radio Stations: Frequencies, History & How to Listen"
+  description={`Guides to ${stations.length} of the best-known radio stations in the world — talkSPORT, BBC Radio 1, NPR, LBC and more: frequencies, owners, history and how to listen live.`}
   jsonLd={jsonLd}
 >
   <Breadcrumbs crumbs={[
@@ -45,8 +45,8 @@ const jsonLd = [
 
   <section class="container blog-index">
     <div class="section-head">
-      <h1>World radio stations</h1>
-      <p>A directory with information about notable radio stations from around the world — history, format, frequencies and programming. Looking for live streams? Use the <a href="/#player">player</a> to browse thousands of stations by country.</p>
+      <h1>Famous radio stations around the world</h1>
+      <p>Guides to some of the best-known radio stations in the world — frequencies, history, owners and programming, plus a live player on every page. Looking for something else? <a href="/#player">Spin the globe</a> to browse thousands of stations, or pick a <a href="/country">country</a>.</p>
     </div>
 
     <div class="genre-filters" data-station-countries>

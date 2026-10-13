@@ -9,6 +9,14 @@ frequencies: ["London 95.8 FM", "FM frequencies across UK regions", "DAB digital
 website: "https://www.capitalfm.com"
 language: "English"
 country: "United Kingdom"
+metaTitle: "Capital FM Frequency: 95.8 FM London & UK — Listen Live"
+metaDescription: "Capital is on 95.8 FM in London, 102.0 FM in Manchester and 102.2 FM in Birmingham, plus DAB and Global Player. Listen to Capital FM live online."
+playerSearch: "Capital"
+faq:
+  - q: "What frequency is Capital FM on?"
+    a: "Capital's FM frequency depends on where you are: 95.8 FM in London, 102.0 FM in Manchester and 102.2 FM in Birmingham, with other local frequencies around the UK. It is also on DAB digital radio and streams online via Global Player."
+  - q: "Is Capital FM on DAB?"
+    a: "Yes. Capital is available on DAB digital radio — scan your radio and select Capital — as well as online and in the Global Player app."
 ---
 
 Capital FM is a national contemporary hit radio network in the United Kingdom, owned and operated by Global. Built around current chart hits, pop and dance music, it targets a young audience and is one of the country's most prominent commercial radio brands.

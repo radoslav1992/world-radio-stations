@@ -9,6 +9,7 @@ frequencies: ["Sydney 95.3 FM", "Melbourne 91.5 FM", "DAB+ digital radio", "Onli
 website: "https://www.smooth.com.au"
 language: "English"
 country: "Australia"
+playerSearch: "smooth"
 ---
 
 smoothfm is a commercial radio brand in Australia specialising in relaxed, easy listening music. Operated by Nova Entertainment, it broadcasts on FM in Sydney and Melbourne and extends to other markets through digital radio and online streaming.

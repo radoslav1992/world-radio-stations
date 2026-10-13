@@ -5,6 +5,17 @@ import { COUNTRIES } from '../scripts/countries';
 import RadioPlayer from '../components/RadioPlayer.astro';
 import { getCollection } from 'astro:content';
 
+// Station guides that already pick up search impressions; a homepage link
+// is the strongest internal signal we can give them.
+const FEATURED_STATIONS = [
+  'talksport', 'bbc-radio-1', 'capital-fm', 'lbc', 'heart-fm', 'absolute-radio',
+  'classic-fm-uk', 'npr', 'bbc-radio-5-live', 'bbc-radio-6-music', 'sveriges-radio-p3', 'cadena-cope',
+];
+const allProfiles = await getCollection('stations');
+const featuredStations = FEATURED_STATIONS
+  .map((slug) => allProfiles.find((s) => s.slug === slug))
+  .filter((s): s is NonNullable<typeof s> => Boolean(s));
+
 const latestPosts = (await getCollection('blog'))
   .sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime())
   .slice(0, 3);
@@ -109,30 +120,26 @@ const jsonLd = [
     '@context': 'https://schema.org',
     '@type': 'WebSite',
     name: 'World Radio Stations',
-    url: 'https://worldradiostations.org',
+    alternateName: ['World Radio', 'worldradiostations.org'],
+    url: 'https://worldradiostations.org/',
     inLanguage: 'en',
-    potentialAction: {
-      '@type': 'SearchAction',
-      target: 'https://worldradiostations.org/#player',
-      'query-input': 'required name=search_term_string',
-    },
   },
 ];
 const topCountries = COUNTRIES.slice(0, 12);
 ---
 <Base
-  title="World Radio Stations — Listen to radio from around the world online"
-  description="Listen to thousands of radio stations from around the world for free — pop, rock, jazz, news and more. Filter by country, right in your browser, no sign-up. Android app coming soon."
+  title="World Radio Stations — Free Live Radio from Around the World"
+  description="Listen to thousands of world radio stations live online for free — pop, rock, jazz, news and talk from 200+ countries. Spin the globe or pick a country, right in your browser, no sign-up."
   jsonLd={jsonLd}
 >
   <section id="player" class="container hero">
     <RadioPlayer>
       <div slot="intro" class="hero-intro">
         <p class="eyebrow"><span class="live-dot" aria-hidden="true"></span> Live radio from 200+ countries</p>
-        <h1>Spin the globe.<br /><span class="text-gradient">Tune in anywhere.</span></h1>
+        <h1>Spin the globe.<br /><span class="text-gradient">Tune in to world radio.</span></h1>
         <p class="tagline">
-          Thousands of live radio stations, each one a light on the map — pop, rock, jazz, news and more.
-          Free in your browser, no sign-up.
+          Thousands of live radio stations from around the world, each one a light on the map — pop, rock,
+          jazz, news and more. Free in your browser, no sign-up.
         </p>
         <ul class="trust-row" aria-label="Quick facts">
           <li><strong>1000s</strong> of stations</li>
@@ -186,6 +193,24 @@ const topCountries = COUNTRIES.slice(0, 12);
     </div>
     <div class="section-more">
       <a class="link-arrow" href="/country">All countries →</a>
+    </div>
+  </section>
+
+  <section class="container">
+    <div class="section-head">
+      <h2>Popular radio stations</h2>
+      <p>Frequencies, history and how to listen live to some of the world’s best-known stations.</p>
+    </div>
+    <div class="facet-grid">
+      {featuredStations.map((s) => (
+        <a class="facet-card" href={`/stations/${s.slug}`}>
+          <span class="facet-name">{s.data.name}</span>
+          <span class="facet-count">{s.data.country}</span>
+        </a>
+      ))}
+    </div>
+    <div class="section-more">
+      <a class="link-arrow" href="/stations">All station guides →</a>
     </div>
   </section>
 

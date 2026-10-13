@@ -8,6 +8,7 @@ frequencies: ["Nationwide FM across Portugal", "Online streaming and apps"]
 website: "https://radiocomercial.pt"
 language: "Portuguese"
 country: "Portugal"
+playerSearch: "Comercial"
 ---
 
 Rádio Comercial is a national commercial music station in Portugal and, in recent years, the most-listened radio station in the country. It combines a mainstream pop and rock playlist with strong personality-driven entertainment, most notably its celebrated morning show.

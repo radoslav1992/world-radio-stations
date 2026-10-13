@@ -1766,6 +1766,14 @@ a.facet-card:hover {
 .station-infobox th { width: 1%; white-space: nowrap; color: var(--text-muted); font-weight: 600; }
 .station-infobox td { color: var(--text); }
 .station-infobox a { color: var(--accent-2); }
+.legal.station-top { padding-bottom: 0.5rem; }
+.legal.station-body { padding-top: 0.5rem; }
+.station-faq .faq { margin-top: 1rem; }
+
+/* Listen page: crawlable station details below the player */
+.listen-about { padding-bottom: 1rem; }
+.listen-about .prose { margin-bottom: 1.25rem; }
+.listen-about .station-infobox { max-width: 720px; margin-inline: auto; }
 
 /* Contact */
 .contact-email {

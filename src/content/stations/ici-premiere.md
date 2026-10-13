@@ -9,6 +9,7 @@ frequencies: ["Montreal 95.1 FM", "Frequencies across Canada", "Online via OHdio
 website: "https://ici.radio-canada.ca/premiere"
 language: "French"
 country: "Canada"
+playerSearch: "Première"
 ---
 
 ICI Radio-Canada Première is the flagship French-language talk radio network of CBC/Radio-Canada, Canada's national public broadcaster. Commercial-free and focused on news, current affairs and culture, it is the francophone counterpart to the English-language CBC Radio One.

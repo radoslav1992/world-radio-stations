@@ -1,7 +1,9 @@
 ---
 import Base from '../../layouts/Base.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import RadioPlayer from '../../components/RadioPlayer.astro';
 import { getCollection } from 'astro:content';
+import { COUNTRIES } from '../../scripts/countries';
 
 export async function getStaticPaths() {
   const stations = await getCollection('stations');
@@ -14,132 +16,193 @@ export async function getStaticPaths() {
 const { station } = Astro.props;
 const { Content } = await station.render();
 
-const allStations = await getCollection('stations');
-const similar = allStations
-  .filter((s) => s.slug !== station.slug && s.data.format === station.data.format)
-  .slice(0, 4);
-
 const SITE_URL = 'https://worldradiostations.org';
+
+const d = station.data;
+const countryCode = COUNTRIES.find((c) => c.name === d.country)?.code ?? '';
+
+// Same-country profiles first (that's what people compare against), then
+// same-format ones from elsewhere.
+const allStations = await getCollection('stations');
+const others = allStations.filter((s) => s.slug !== station.slug);
+const similar = [
+  ...others.filter((s) => s.data.country === d.country),
+  ...others.filter((s) => s.data.country !== d.country && s.data.format === d.format),
+].slice(0, 6);
+
+const clip = (text: string, max = 158) => {
+  if (text.length <= max) return text;
+  const cut = text.slice(0, max - 1);
+  return cut.slice(0, cut.lastIndexOf(' ')).replace(/[\s,;:—-]+$/, '') + '…';
+};
+
+const howToListen = d.frequencies.length ? d.frequencies.join(', ') : 'online streaming';
+const websiteHost = d.website ? d.website.replace(/^https?:\/\//, '').replace(/\/$/, '') : '';
+
+// Most search traffic to these pages is "<station> frequency" or
+// "<station> live", so the title and snippet lead with exactly that.
+const title = d.metaTitle ?? `${d.name} — Frequency, Live Stream & How to Listen`;
+const description = d.metaDescription
+  ?? clip(`How to listen to ${d.name}: ${howToListen}. Listen live online for free, plus the station’s history, owner and programming.`);
+
+// Radio Browser names rarely carry our disambiguating suffixes ("(UK)", call signs).
+const playerSearch = d.playerSearch ?? d.name.replace(/\s*\([^)]*\)/g, '').trim();
 
 // One-sentence answer for the "which country / who owns / how to listen"
 // queries these pages rank for.
-const d = station.data;
 const quickAnswer = [
   `${d.name} is a ${d.format.toLowerCase()} radio station from ${d.country}`,
   d.owner ? `owned by ${d.owner}` : '',
   d.founded ? `on air since ${d.founded}` : '',
 ].filter(Boolean).join(', ') + '.';
 
+// Station-specific questions first; the generic ones fill the gaps. Every
+// question here is rendered on the page as well as in the FAQPage markup.
+const frequencyAnswer = d.faq.find((f) => /frequenc/i.test(f.q))?.a;
+const faqs: { q: string; a: string }[] = [
+  ...d.faq,
+  ...(frequencyAnswer
+    ? []
+    : [{
+        q: `What frequency is ${d.name} on?`,
+        a: `${d.name} is available on ${howToListen}.`,
+      }]),
+  {
+    q: `Which country is ${d.name} from?`,
+    a: `${d.name} is a radio station from ${d.country}${d.headquarters ? `, headquartered in ${d.headquarters}` : ''}. It broadcasts in ${d.language}.`,
+  },
+  ...(d.owner ? [{ q: `Who owns ${d.name}?`, a: `${d.name} is owned by ${d.owner}.` }] : []),
+  {
+    q: `How can I listen to ${d.name} online?`,
+    a: `You can stream ${d.name} live in your browser with the player on this page${websiteHost ? ` or on the official website, ${websiteHost}` : ''} — free, with no app or sign-up needed.`,
+  },
+];
+
 const faqJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'FAQPage',
-  mainEntity: [
-    {
-      '@type': 'Question',
-      name: `Which country is ${d.name} from?`,
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: `${d.name} is a radio station from ${d.country}${d.headquarters ? `, headquartered in ${d.headquarters}` : ''}. It broadcasts in ${d.language}.`,
-      },
-    },
-    ...(d.owner
-      ? [{
-          '@type': 'Question',
-          name: `Who owns ${d.name}?`,
-          acceptedAnswer: { '@type': 'Answer', text: `${d.name} is owned by ${d.owner}.` },
-        }]
-      : []),
-    {
-      '@type': 'Question',
-      name: `How can I listen to ${d.name}?`,
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: `${d.name} is available via ${d.frequencies.length ? d.frequencies.join(', ') : 'online streaming'}.${d.website ? ` The official website is ${d.website}.` : ''}`,
-      },
-    },
-  ],
+  mainEntity: faqs.map((f) => ({
+    '@type': 'Question',
+    name: f.q,
+    acceptedAnswer: { '@type': 'Answer', text: f.a },
+  })),
 };
 
+const pageUrl = `${SITE_URL}/stations/${station.slug}`;
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'RadioStation',
-  name: station.data.name,
-  description: station.data.description,
-  ...(station.data.founded ? { foundingDate: station.data.founded } : {}),
-  ...(station.data.owner ? { parentOrganization: { '@type': 'Organization', name: station.data.owner } } : {}),
-  ...(station.data.headquarters ? { areaServed: { '@type': 'Country', name: station.data.country }, address: { '@type': 'PostalAddress', addressLocality: station.data.headquarters, addressCountry: station.data.country } } : {}),
-  ...(station.data.website ? { url: station.data.website } : {}),
-  ...(station.data.slogan ? { slogan: station.data.slogan } : {}),
-  inLanguage: station.data.language === 'English' ? 'en' : station.data.language,
-  mainEntityOfPage: {
-    '@type': 'WebPage',
-    '@id': `${SITE_URL}/stations/${station.slug}`,
-  },
+  name: d.name,
+  description: d.description,
+  ...(d.founded ? { foundingDate: d.founded } : {}),
+  ...(d.owner ? { parentOrganization: { '@type': 'Organization', name: d.owner } } : {}),
+  areaServed: { '@type': 'Country', name: d.country },
+  ...(d.headquarters ? { address: { '@type': 'PostalAddress', addressLocality: d.headquarters, addressCountry: d.country } } : {}),
+  ...(d.website ? { url: d.website, sameAs: [d.website] } : {}),
+  ...(d.slogan ? { slogan: d.slogan } : {}),
+  inLanguage: d.language === 'English' ? 'en' : d.language,
+  mainEntityOfPage: { '@type': 'WebPage', '@id': pageUrl },
 };
 ---
 <Base
-  title={`${station.data.name} — which country it’s from, frequencies & how to listen`}
-  description={station.data.description}
+  title={title}
+  description={description}
   jsonLd={[jsonLd, faqJsonLd]}
 >
   <Breadcrumbs crumbs={[
     { label: 'Home', href: '/' },
     { label: 'Stations', href: '/stations' },
-    { label: station.data.name },
+    { label: d.name },
   ]} />
 
-  <article class="container legal blog-post">
-    <h1>{station.data.name}</h1>
+  <article>
+    <div class="container legal blog-post station-top">
+      <h1>{d.name}</h1>
 
-    <p><strong>{quickAnswer}</strong></p>
+      <p><strong>{quickAnswer}</strong></p>
 
-    <div class="station-infobox">
-      <table>
-        {station.data.format && <tr><th>Format</th><td>{station.data.format}</td></tr>}
-        {station.data.founded && <tr><th>Founded</th><td>{station.data.founded}</td></tr>}
-        {station.data.owner && <tr><th>Owner</th><td>{station.data.owner}</td></tr>}
-        {station.data.headquarters && <tr><th>Headquarters</th><td>{station.data.headquarters}</td></tr>}
-        {station.data.slogan && <tr><th>Slogan</th><td><em>{station.data.slogan}</em></td></tr>}
-        {station.data.frequencies.length > 0 && (
-          <tr><th>Frequencies</th><td>{station.data.frequencies.join(', ')}</td></tr>
-        )}
-        {station.data.website && (
-          <tr><th>Website</th><td><a href={station.data.website} target="_blank" rel="noopener noreferrer">{station.data.website.replace('https://', '')}</a></td></tr>
-        )}
-        <tr><th>Language</th><td>{station.data.language}</td></tr>
-        <tr><th>Country</th><td>{station.data.country}</td></tr>
-      </table>
+      <div class="station-infobox">
+        <table>
+          {d.format && <tr><th>Format</th><td>{d.format}</td></tr>}
+          {d.founded && <tr><th>Founded</th><td>{d.founded}</td></tr>}
+          {d.owner && <tr><th>Owner</th><td>{d.owner}</td></tr>}
+          {d.headquarters && <tr><th>Headquarters</th><td>{d.headquarters}</td></tr>}
+          {d.slogan && <tr><th>Slogan</th><td><em>{d.slogan}</em></td></tr>}
+          {d.website && (
+            <tr><th>Website</th><td><a href={d.website} target="_blank" rel="noopener noreferrer">{websiteHost}</a></td></tr>
+          )}
+          <tr><th>Language</th><td>{d.language}</td></tr>
+          {countryCode && <tr><th>Country</th><td><a href={`/country/${countryCode.toLowerCase()}`}>{d.country}</a></td></tr>}
+          {!countryCode && <tr><th>Country</th><td>{d.country}</td></tr>}
+        </table>
+      </div>
+
+      <h2 id="frequencies">{d.name} frequency &amp; how to listen</h2>
+      {d.frequencies.length > 0
+        ? <ul>{d.frequencies.map((f) => <li>{f}</li>)}</ul>
+        : <p>{d.name} streams online.</p>}
+      {frequencyAnswer && <p>{frequencyAnswer}</p>}
     </div>
 
-    <Content />
-
-    {similar.length > 0 && (
-      <div class="similar-stations">
-        <h2>Similar stations</h2>
-        <div class="station-directory" style="margin-bottom:2rem;">
-          {similar.map((s) => (
-            <a href={`/stations/${s.slug}`} class="blog-card">
-              <div class="blog-card-body">
-                <div class="blog-card-tags">
-                  <span class="tag-chip">{s.data.format}</span>
-                </div>
-                <h3>{s.data.name}</h3>
-                <p>{s.data.description}</p>
-              </div>
-            </a>
-          ))}
+    {countryCode && (
+      <section class="container player-section station-player" id="listen" aria-labelledby="listen-heading">
+        <div class="section-head">
+          <h2 id="listen-heading">Listen to {d.name} live</h2>
+          <p>
+            Live radio from {d.country}, filtered to {d.name}. Press play to start the stream — or clear
+            the search to browse every {d.country} station.
+          </p>
         </div>
-      </div>
+        <RadioPlayer countryDefault={countryCode} search={playerSearch} globe={false} />
+      </section>
     )}
 
-    <div class="blog-cta">
-      <p>Look for {station.data.name} in our web player, or listen directly from the station’s official site.</p>
-      <div class="hero-ctas">
-        <a class="cta cta-secondary" href="/#player">Search in the player</a>
-        {station.data.website && (
-          <a class="cta cta-secondary" href={station.data.website} target="_blank" rel="noopener noreferrer">Official site</a>
-        )}
-        <a class="cta cta-secondary" href="/stations">All stations</a>
+    <div class="container legal blog-post station-body">
+      <Content />
+
+      <section class="station-faq" aria-labelledby="faq-heading">
+        <h2 id="faq-heading">{d.name}: frequently asked questions</h2>
+        <div class="faq">
+          {faqs.map((f) => (
+            <details>
+              <summary>{f.q}</summary>
+              <p>{f.a}</p>
+            </details>
+          ))}
+        </div>
+      </section>
+
+      {similar.length > 0 && (
+        <div class="similar-stations">
+          <h2>Similar stations</h2>
+          <div class="station-directory" style="margin-bottom:2rem;">
+            {similar.map((s) => (
+              <a href={`/stations/${s.slug}`} class="blog-card">
+                <div class="blog-card-body">
+                  <div class="blog-card-tags">
+                    <span class="tag-chip">{s.data.format}</span>
+                    {s.data.country !== d.country && <span class="tag-chip">{s.data.country}</span>}
+                  </div>
+                  <h3>{s.data.name}</h3>
+                  <p>{s.data.description}</p>
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div class="blog-cta">
+        <p>Explore more radio from {d.country}, or go straight to {d.name}’s official site.</p>
+        <div class="hero-ctas">
+          {countryCode && (
+            <a class="cta cta-secondary" href={`/country/${countryCode.toLowerCase()}`}>{d.country} radio stations</a>
+          )}
+          {d.website && (
+            <a class="cta cta-secondary" href={d.website} target="_blank" rel="noopener noreferrer">Official site</a>
+          )}
+          <a class="cta cta-secondary" href="/stations">All stations</a>
+        </div>
       </div>
     </div>
   </article>

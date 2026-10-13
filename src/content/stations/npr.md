@@ -10,6 +10,12 @@ website: "https://www.npr.org"
 language: "English"
 country: "United States"
 slogan: "This is NPR."
+metaTitle: "NPR (National Public Radio) — Listen Live & Find Your Station"
+metaDescription: "NPR has no single frequency: its news and shows air on 1,000+ member stations across the US. Listen to NPR live online, plus its history and programming."
+playerSearch: "NPR"
+faq:
+  - q: "What frequency is NPR on?"
+    a: "NPR doesn't have one national frequency. Its programmes are carried by more than 1,000 independent member stations across the United States, each on its own local FM or AM frequency, and NPR also streams online."
 ---
 
 ## History

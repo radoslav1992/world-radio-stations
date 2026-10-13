@@ -3,7 +3,7 @@ import Base from '../../layouts/Base.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import RadioPlayer from '../../components/RadioPlayer.astro';
 import { getCollection } from 'astro:content';
-import { COUNTRIES } from '../../scripts/countries';
+import { ALL_COUNTRY_CODES, COUNTRIES, countryName } from '../../scripts/countries';
 
 export const prerender = false;
 
@@ -18,12 +18,14 @@ const def = COUNTRIES.find((c) => c.code === cc);
 // Top stations for the crawlable list (the embedded player loads its own).
 let stations: any[] = [];
 let totalCount = 0;
+let apiOk = false;
 try {
   const res = await fetch(
     `${API}/stations/bycountrycodeexact/${cc}?hidebroken=true&order=clickcount&reverse=true&limit=60`,
     { headers: FETCH_HEADERS },
   );
   if (res.ok) {
+    apiOk = true;
     const raw = await res.json();
     const seen = new Set<string>();
     for (const s of Array.isArray(raw) ? raw : []) {
@@ -45,18 +47,26 @@ try {
   }
 } catch { /* graceful */ }
 
-const name = def?.name || stations[0]?.country || cc;
+const isKnown = ALL_COUNTRY_CODES.includes(cc);
+const name = def?.name || (isKnown ? countryName(cc) : stations[0]?.country || cc);
 
-if (!def && stations.length === 0) {
+if (!isKnown || (apiOk && stations.length === 0)) {
   Astro.response.status = 404;
+} else if (!apiOk) {
+  // Radio Browser is down and there's nothing to list: ask crawlers to retry
+  // instead of indexing (or dropping) an empty page.
+  Astro.response.status = 503;
+  Astro.response.headers.set('Retry-After', '600');
 }
+const isOk = Astro.response.status === 200;
 
 Astro.response.headers.set(
   'Cache-Control',
-  Astro.response.status === 404 ? 'public, max-age=30' : 'public, max-age=300, s-maxage=1800',
+  isOk ? 'public, max-age=300, s-maxage=1800' : 'public, max-age=30',
 );
 
 const shown = stations.slice(0, 48);
+const popularNames = [...new Set<string>(shown.map((s) => String(s.name || '').trim()).filter(Boolean))].slice(0, 5);
 const related = COUNTRIES.filter((c) => c.code !== cc).slice(0, 12);
 
 // Directory entries that match an editorial station profile link internally.
@@ -84,15 +94,6 @@ const jsonLd = [
     inLanguage: 'en',
     url: `${SITE_URL}/country/${cc.toLowerCase()}`,
   },
-  {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_URL },
-      { '@type': 'ListItem', position: 2, name: 'Countries', item: `${SITE_URL}/country` },
-      { '@type': 'ListItem', position: 3, name: name },
-    ],
-  },
   ...(shown.length
     ? [{
         '@context': 'https://schema.org',
@@ -109,9 +110,10 @@ const jsonLd = [
 ];
 ---
 <Base
-  title={`${name} Radio Stations — Listen Live Online, Free | World Radio Stations`}
-  description={`Listen to ${totalCount ? `${totalCount.toLocaleString('en')} ` : ''}radio stations from ${name} live online — news, music and talk, free in your browser. No sign-up.`}
+  title={`${name} Radio Stations — Listen Live Online Free`}
+  description={`Listen to ${totalCount ? `${totalCount.toLocaleString('en')} ` : ''}radio stations from ${name} live online${popularNames.length ? ` — ${popularNames.slice(0, 3).join(', ')} and more` : ' — news, music and talk'}, free in your browser. No sign-up.`}
   jsonLd={jsonLd}
+  noindex={!isOk || shown.length < 3}
 >
   <Breadcrumbs crumbs={[
     { label: 'Home', href: '/' },
@@ -135,8 +137,10 @@ const jsonLd = [
   {shown.length > 0 && (
     <section class="container">
       <div class="section-head">
-        <h2>Top {name} stations</h2>
-        <p>The most-listened stations from {name} on World Radio Stations.</p>
+        <h2>Top {name} radio stations</h2>
+        <p>
+          The most-listened stations from {name} on World Radio Stations{popularNames.length >= 3 && `, including ${popularNames.slice(0, -1).join(', ')} and ${popularNames[popularNames.length - 1]}`}.
+        </p>
       </div>
       <div class="facet-grid">
         {shown.map((s) => {
