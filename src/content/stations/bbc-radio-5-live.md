@@ -9,6 +9,12 @@ frequencies: ["UK 693 and 909 AM (MW)", "DAB digital radio", "Online via BBC Sou
 website: "https://www.bbc.co.uk/5live"
 language: "English"
 country: "United Kingdom"
+metaTitle: "BBC Radio 5 Live Frequency: 693 & 909 AM, DAB — Listen Live"
+faq:
+  - q: "What frequency is BBC Radio 5 Live on?"
+    a: "BBC Radio 5 Live broadcasts on medium wave (AM), mainly on 693 kHz and 909 kHz, as well as on DAB digital radio and online via BBC Sounds."
+  - q: "Is BBC Radio 5 Live on FM?"
+    a: "No. 5 Live has no FM frequency — its analogue service is AM (medium wave) only. For better sound, listen on DAB or BBC Sounds."
 ---
 
 BBC Radio 5 Live is the BBC's national radio network for live news and sport. Its schedule mixes breaking news, interviews and listener phone-ins with commentary on football, cricket, rugby, tennis and other major sporting events.

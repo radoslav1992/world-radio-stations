@@ -10,6 +10,15 @@ website: "https://www.lbc.co.uk"
 language: "English"
 country: "United Kingdom"
 slogan: "Leading Britain's Conversation"
+metaTitle: "LBC Frequency: 97.3 FM London, DAB Nationwide — Listen Live"
+metaDescription: "LBC is on 97.3 FM in London only. Everywhere else in the UK, listen on national DAB digital radio, online or via Global Player. Listen to LBC live here."
+faq:
+  - q: "What frequency is LBC on?"
+    a: "LBC is on 97.3 FM in London. Across the rest of the UK it is on national DAB digital radio, and it also streams online and through the Global Player app."
+  - q: "Can I get LBC on FM outside London?"
+    a: "No. LBC's only FM frequency is 97.3 FM, which covers London. Outside London, listen on DAB — LBC has been on national DAB since February 2014 — or stream it online."
+  - q: "What DAB channel is LBC on?"
+    a: "LBC is carried on the national Digital One multiplex: block 11D (222.064 MHz) across most of the UK and block 12A (223.936 MHz) in Scotland. On a DAB radio just scan for stations and select LBC."
 ---
 
 LBC is a national talk radio station in the United Kingdom, owned and operated by Global. Built around news, opinion and listener phone-ins, it has become one of the most influential outlets for political debate in British media.

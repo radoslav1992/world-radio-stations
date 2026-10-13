@@ -10,6 +10,7 @@ website: "https://www.kcrw.com"
 language: "English"
 country: "United States"
 slogan: "Listener-supported radio for Los Angeles and the world."
+playerSearch: "KCRW"
 ---
 
 ## History

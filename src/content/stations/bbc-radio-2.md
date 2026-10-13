@@ -9,6 +9,10 @@ frequencies: ["UK 88–90.2 FM", "DAB digital radio", "Online via BBC Sounds"]
 website: "https://www.bbc.co.uk/radio2"
 language: "English"
 country: "United Kingdom"
+metaTitle: "BBC Radio 2 Frequency: 88–91 FM, DAB — Listen Live Online"
+faq:
+  - q: "What frequency is BBC Radio 2 on?"
+    a: "BBC Radio 2 broadcasts on FM between 88 and 90.2 MHz, depending on where you are in the UK, plus DAB digital radio and online via BBC Sounds."
 ---
 
 BBC Radio 2 is the BBC's national adult contemporary station, offering a broad mix of popular music, entertainment, documentaries and specialist programming aimed at listeners over 35. It regularly tops UK audience figures, making it the country's most popular radio station.

@@ -10,6 +10,7 @@ website: "https://www.kexp.org"
 language: "English"
 country: "United States"
 slogan: "Where the music matters."
+playerSearch: "KEXP"
 ---
 
 ## History

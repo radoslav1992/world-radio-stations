@@ -10,6 +10,12 @@ website: "https://www.heart.co.uk"
 language: "English"
 country: "United Kingdom"
 slogan: "Turn Up the Feel Good"
+metaTitle: "Heart Radio Frequency (106.2 FM London) — Listen Live"
+metaDescription: "Heart is on 106.2 FM in London and on local FM frequencies around the UK, plus DAB and Global Player. Listen to Heart FM live online, free in your browser."
+playerSearch: "Heart"
+faq:
+  - q: "What frequency is Heart on?"
+    a: "Heart London is on 106.2 FM. Elsewhere Heart uses local FM frequencies that vary by region, and it is also on DAB digital radio and online via Global Player — the official Heart website has a postcode checker for your area."
 ---
 
 Heart is one of the United Kingdom's largest commercial radio networks, owned and operated by Global. Aimed at a broad adult audience, it plays melodic pop hits from the 1990s to today under its long-running "feel good" positioning.

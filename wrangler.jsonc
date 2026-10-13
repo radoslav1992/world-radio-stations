@@ -12,6 +12,7 @@
   ],
   "assets": {
     "binding": "ASSETS",
-    "directory": "dist"
+    "directory": "dist",
+    "html_handling": "drop-trailing-slash"
   }
 }

@@ -9,6 +9,7 @@ frequencies: ["Sweden-wide FM via 25 local stations", "DAB+ digital radio", "Onl
 website: "https://sverigesradio.se/p4"
 language: "Swedish"
 country: "Sweden"
+playerSearch: "P4"
 ---
 
 Sveriges Radio P4 is the fourth national channel of Sweden's public broadcaster Sveriges Radio and the country's most listened-to radio channel. It is built around a network of local stations covering every part of Sweden, which broadcast regional news and programming during the day and share a common national schedule at other times.

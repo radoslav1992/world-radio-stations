@@ -10,6 +10,10 @@ website: "https://www.bbc.co.uk/radio1"
 language: "English"
 country: "United Kingdom"
 slogan: "In New Music We Trust"
+metaTitle: "BBC Radio 1 Frequency: 97–99 FM, DAB — Listen Live Online"
+faq:
+  - q: "What frequency is BBC Radio 1 on?"
+    a: "BBC Radio 1 broadcasts on FM between 97.6 and 99.8 MHz, depending on where you are in the UK, plus DAB digital radio and online via BBC Sounds."
 ---
 
 ## History

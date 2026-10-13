@@ -10,6 +10,7 @@ website: "https://sverigesradio.se/p3"
 language: "Swedish"
 country: "Sweden"
 slogan: ""
+playerSearch: "P3"
 ---
 
 ## History

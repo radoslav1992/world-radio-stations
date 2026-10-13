@@ -9,6 +9,13 @@ frequencies: ["DAB digital radio", "Online and via the Absolute Radio app"]
 website: "https://absoluteradio.co.uk"
 language: "English"
 country: "United Kingdom"
+metaTitle: "Absolute Radio Frequency — DAB, Online & How to Listen Live"
+metaDescription: "Absolute Radio no longer has an AM or FM frequency — listen on national DAB, online or in the app. Absolute Radio Country is on DAB+ too."
+faq:
+  - q: "What frequency is Absolute Radio on?"
+    a: "Absolute Radio no longer has an analogue frequency. It left FM in London in 2021 and switched off its national AM (medium wave) transmitters, including 1215 kHz, in January 2023. It now broadcasts nationally on DAB digital radio and streams online, in the Absolute Radio app and on smart speakers."
+  - q: "What frequency is Absolute Radio Country on?"
+    a: "Absolute Radio Country has no AM or FM frequency. It went national on DAB+ in 2023, so older DAB-only radios may not receive it, and it also streams online and in the Absolute Radio app."
 ---
 
 Absolute Radio is a national commercial music station in the United Kingdom, owned by Bauer Media Audio UK. It plays rock and pop-rock aimed at an adult audience and anchors a family of decade-themed spin-off stations.

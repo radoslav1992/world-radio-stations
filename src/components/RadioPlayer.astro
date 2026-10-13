@@ -21,6 +21,8 @@ interface Props {
   globe?: boolean;
   /** Label for the globe's scope chip (e.g. a mood name). */
   scopeLabel?: string;
+  /** Prefill the search box once stations load (station profile pages). */
+  search?: string;
 }
 const {
   mode = 'browse',
@@ -31,6 +33,7 @@ const {
   showCountry = mode === 'browse' && !tags,
   globe = true,
   scopeLabel,
+  search,
 } = Astro.props;
 
 const hasIntro = Astro.slots.has('intro');
@@ -39,6 +42,7 @@ if (autoplay) rootAttrs['data-autoplay'] = autoplay;
 if (countryDefault) rootAttrs['data-country-default'] = countryDefault;
 if (tags) rootAttrs['data-tags'] = tags;
 if (scopeLabel) rootAttrs['data-scope-label'] = scopeLabel;
+if (search) rootAttrs['data-search-default'] = search;
 ---
 <div class:list={['explorer', { 'has-globe': globe, 'has-intro': hasIntro }]} data-player data-mode={mode} {...rootAttrs}>
   {hasIntro && <div class="explorer-intro"><slot name="intro" /></div>}

@@ -8,6 +8,7 @@ frequencies: ["Nationwide FM across Bulgaria", "Online streaming via bnr.bg"]
 website: "https://bnr.bg/horizont"
 language: "Bulgarian"
 country: "Bulgaria"
+playerSearch: "Horizont"
 ---
 
 Horizont is the flagship channel of Bulgarian National Radio (BNR), the country's public service radio broadcaster. Broadcasting around the clock, it is Bulgaria's principal radio outlet for news, current affairs and sport, complemented by music and cultural programming.

@@ -10,6 +10,11 @@ website: "https://www.classicfm.com"
 language: "English"
 country: "United Kingdom"
 slogan: ""
+metaTitle: "Classic FM Frequency: 100–102 FM, DAB — Listen Live Online"
+playerSearch: "Classic FM"
+faq:
+  - q: "What frequency is Classic FM on?"
+    a: "Classic FM broadcasts across the UK on FM between 99.9 and 101.9 MHz (often given as 100–102 FM), depending on where you are, plus DAB digital radio and online via Global Player."
 ---
 
 ## History

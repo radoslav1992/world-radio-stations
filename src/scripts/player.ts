@@ -65,6 +65,7 @@ class Player {
   private country = '';
   private tags = '';
   private autoplayUuid = '';
+  private searchDefault = '';
   private forcedCountry: string | null = null;
   private loadToken = 0;
 
@@ -133,6 +134,7 @@ class Player {
     this.autoplayUuid = root.dataset.autoplay
       || new URLSearchParams(window.location.search).get('play')
       || '';
+    this.searchDefault = root.dataset.searchDefault || '';
 
     const savedView = localStorage.getItem(VIEW_KEY) as View | null;
     this.view = savedView === 'grid' ? 'grid' : 'list';
@@ -301,6 +303,7 @@ class Player {
           this.country = this.forcedCountry ?? (localStorage.getItem(COUNTRY_KEY) || '');
           this.buildCountrySelect();
           await this.loadCountry(this.country);
+          this.applySearchDefault();
         }
         if (this.autoplayUuid) await this.cueByUuid(this.autoplayUuid);
         return;
@@ -321,6 +324,15 @@ class Player {
       console.error(err);
       this.showError('We couldn’t load the stations.');
     }
+  }
+
+  /** Narrow the list to a preset name, unless that would leave it empty. */
+  private applySearchDefault() {
+    if (!this.searchDefault || !this.searchEl || this.searchEl.value || this.all.length === 0) return;
+    this.searchEl.value = this.searchDefault;
+    this.recomputeFiltered();
+    if (this.filtered.length === 0) this.searchEl.value = '';
+    this.applyFilter();
   }
 
   private showToolbar() {
