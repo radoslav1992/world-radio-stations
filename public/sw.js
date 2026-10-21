@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'world-radio-v3';
+const CACHE_VERSION = 'world-radio-v4';
 const APP_SHELL = [
   '/',
   '/logo.svg',
@@ -35,6 +35,10 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
+
+  // Leave third-party requests (ads, analytics, fonts) and the ad iframe
+  // entirely to the browser.
+  if (url.origin !== self.location.origin || url.pathname === '/ad-frame') return;
 
   // Network-first for API calls, audio streams, and non-GET requests
   if (

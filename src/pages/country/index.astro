@@ -1,5 +1,6 @@
 ---
 import Base from '../../layouts/Base.astro';
+import AdSlot from '../../components/AdSlot.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import { COUNTRIES } from '../../scripts/countries';
 
@@ -43,8 +44,8 @@ const jsonLd = {
 };
 ---
 <Base
-  title="Radio stations by country — World Radio Stations"
-  description="Browse live radio stations by country — news, music and talk from every part of the world, free to listen online in your browser."
+  title="Radio Stations by Country — Listen to World Radio Live"
+  description="Radio stations from 200+ countries, sorted by country — news, music, talk and sport from every part of the world, free to listen online in your browser."
   jsonLd={jsonLd}
 >
   <Breadcrumbs crumbs={[{ label: 'Home', href: '/' }, { label: 'Countries' }]} />
@@ -52,7 +53,7 @@ const jsonLd = {
   <section class="container blog-index">
     <div class="section-head">
       <h1>Radio stations by country</h1>
-      <p>Pick a country to hear its radio — every stream plays directly from the station’s own servers.</p>
+      <p>Pick a country to hear its most popular live stations — from the United States and the UK to Brazil, India and Nigeria. Every stream plays directly from the station’s own servers, free and without sign-up.</p>
     </div>
 
     <div class="facet-grid">
@@ -63,6 +64,8 @@ const jsonLd = {
         </a>
       ))}
     </div>
+
+    <AdSlot type="native" />
 
     <p style="margin-top:2rem;"><a class="link-arrow" href="/moods">Discover by mood →</a></p>
   </section>

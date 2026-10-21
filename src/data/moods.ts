@@ -14,6 +14,8 @@ export interface Mood {
   blurb: string;
   /** Longer intro paragraph for the mood page. */
   intro: string;
+  /** Blog guides linked from the mood page. */
+  guides?: { href: string; label: string }[];
 }
 
 export const MOODS: Mood[] = [
@@ -25,6 +27,7 @@ export const MOODS: Mood[] = [
     emoji: '🎯',
     blurb: 'Calm, low-distraction stations for deep work and study.',
     intro: 'Ambient and atmospheric stations to help you concentrate — minimal vocals, steady textures and nothing jarring. Perfect for deep work, studying or reading.',
+    guides: [{ href: '/blog/best-radio-stations-for-studying', label: 'Best radio stations for studying and focus' }],
   },
   {
     slug: 'sleep',
@@ -34,6 +37,7 @@ export const MOODS: Mood[] = [
     emoji: '🌙',
     blurb: 'Soft, soothing streams to help you wind down and drift off.',
     intro: 'Gentle, relaxing stations to ease you toward sleep. Pair it with the player’s sleep timer to fade out automatically after you’ve dozed off.',
+    guides: [{ href: '/blog/best-classical-radio-stations', label: 'Best classical radio stations' }],
   },
   {
     slug: 'workout',
@@ -52,6 +56,7 @@ export const MOODS: Mood[] = [
     emoji: '💻',
     blurb: 'Steady lo-fi and electronic for getting in the zone.',
     intro: 'Lo-fi beats and mellow electronic — a relaxed backdrop that keeps you in flow without demanding attention. A developer favourite for long sessions.',
+    guides: [{ href: '/blog/best-radio-stations-for-studying', label: 'Best radio stations for studying and focus' }, { href: '/blog/best-internet-radio-stations', label: 'The best internet radio stations' }],
   },
   {
     slug: 'jazz',
@@ -61,6 +66,7 @@ export const MOODS: Mood[] = [
     emoji: '🎷',
     blurb: 'Smooth jazz, soul and standards for any hour.',
     intro: 'Jazz stations from around the world — from classic standards and bebop to smooth and modern jazz. Ideal for a slow morning or a late evening.',
+    guides: [{ href: '/blog/best-jazz-radio-stations', label: 'Best jazz radio stations to stream' }],
   },
   {
     slug: 'chill',
@@ -70,6 +76,7 @@ export const MOODS: Mood[] = [
     emoji: '🛋️',
     blurb: 'Laid-back sounds to unwind to.',
     intro: 'Downtempo and chillout stations for switching off. Easy listening that fits a quiet afternoon, a dinner at home or simply doing nothing.',
+    guides: [{ href: '/blog/best-internet-radio-stations', label: 'The best internet radio stations' }],
   },
 ];
 

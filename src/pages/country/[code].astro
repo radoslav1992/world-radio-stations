@@ -1,9 +1,10 @@
 ---
 import Base from '../../layouts/Base.astro';
+import AdSlot from '../../components/AdSlot.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import RadioPlayer from '../../components/RadioPlayer.astro';
 import { getCollection } from 'astro:content';
-import { ALL_COUNTRY_CODES, COUNTRIES, countryName } from '../../scripts/countries';
+import { ALL_COUNTRY_CODES, COUNTRIES, countryName, inCountry } from '../../scripts/countries';
 
 export const prerender = false;
 
@@ -49,6 +50,7 @@ try {
 
 const isKnown = ALL_COUNTRY_CODES.includes(cc);
 const name = def?.name || (isKnown ? countryName(cc) : stations[0]?.country || cc);
+const the = inCountry(name);
 
 if (!isKnown || (apiOk && stations.length === 0)) {
   Astro.response.status = 404;
@@ -73,9 +75,39 @@ const related = COUNTRIES.filter((c) => c.code !== cc).slice(0, 12);
 // Name-normalized and country-scoped so foreign namesakes can't collide.
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '');
 const profileSlugByName = new Map<string, string>();
-for (const p of await getCollection('stations')) {
-  if (p.data.country === name) profileSlugByName.set(norm(p.data.name), p.slug);
-}
+const guides = (await getCollection('stations'))
+  .filter((p) => p.data.country === name)
+  .sort((a, b) => a.data.name.localeCompare(b.data.name, 'en'));
+for (const p of guides) profileSlugByName.set(norm(p.data.name), p.slug);
+
+// Blog posts about this country (tagged with it, or linking to this page).
+const countryPath = `/country/${cc.toLowerCase()}`;
+const posts = (await getCollection('blog'))
+  .filter((p) => p.data.tags.includes(name.toLowerCase()) || (p.body || '').includes(`${countryPath})`))
+  .slice(0, 3);
+
+const top5 = popularNames.slice(0, 5);
+const top5List = top5.length < 2 ? top5.join('') : `${top5.slice(0, -1).join(', ')} and ${top5[top5.length - 1]}`;
+const faqs = isOk && top5.length >= 3
+  ? [
+      {
+        q: `What are the most popular radio stations in ${the}?`,
+        a: `The most-listened ${name} stations on World Radio Stations right now are ${top5List}. The list above is ranked by listener clicks in the Radio Browser directory and updates through the day.`,
+      },
+      {
+        q: `How many ${name} radio stations can I listen to online?`,
+        a: `${totalCount > 0 ? `Radio Browser lists ${totalCount.toLocaleString('en')} stations from ${the}. ` : ''}This page shows the ${shown.length} most popular ones that stream over a secure connection, so they play straight in your browser. Use the search box in the player to find any other station by name or genre.`,
+      },
+      {
+        q: `Can I listen to ${name} radio from abroad?`,
+        a: `Yes. Almost every station on this page streams worldwide, so you can listen from anywhere with an internet connection. A few broadcasters block some programmes outside ${the} for rights reasons (live sport is the usual one).`,
+      },
+      {
+        q: `Is it free to listen to ${name} radio stations here?`,
+        a: 'Yes. Listening is free, with no account and no app to install — press play on any station and the stream starts in your browser.',
+      },
+    ]
+  : [];
 
 const stationTags = (s: any): string =>
   (typeof s.tags === 'string' ? s.tags : '')
@@ -86,11 +118,22 @@ const stationTags = (s: any): string =>
     .join(', ');
 
 const jsonLd = [
+  ...(faqs.length
+    ? [{
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: faqs.map((f) => ({
+          '@type': 'Question',
+          name: f.q,
+          acceptedAnswer: { '@type': 'Answer', text: f.a },
+        })),
+      }]
+    : []),
   {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
     name: `${name} radio stations`,
-    description: `Listen to radio stations from ${name} live online, free in your browser.`,
+    description: `Listen to radio stations from ${the} live online, free in your browser.`,
     inLanguage: 'en',
     url: `${SITE_URL}/country/${cc.toLowerCase()}`,
   },
@@ -111,9 +154,10 @@ const jsonLd = [
 ---
 <Base
   title={`${name} Radio Stations — Listen Live Online Free`}
-  description={`Listen to ${totalCount ? `${totalCount.toLocaleString('en')} ` : ''}radio stations from ${name} live online${popularNames.length ? ` — ${popularNames.slice(0, 3).join(', ')} and more` : ' — news, music and talk'}, free in your browser. No sign-up.`}
+  description={`Listen to ${totalCount ? `${totalCount.toLocaleString('en')} ` : ''}radio stations from ${the} live online${popularNames.length ? ` — ${popularNames.slice(0, 3).join(', ')} and more` : ' — news, music and talk'}, free in your browser. No sign-up.`}
   jsonLd={jsonLd}
   noindex={!isOk || shown.length < 3}
+  ads={isOk}
 >
   <Breadcrumbs crumbs={[
     { label: 'Home', href: '/' },
@@ -122,11 +166,11 @@ const jsonLd = [
   ]} />
 
   <section class="container page-head">
-    <h1>{name} radio stations</h1>
+    <h1>{name} radio stations — listen live online</h1>
     <p class="page-sub">
-      Listen to live radio from {name} — free, straight in your browser.
+      Listen to live radio from {the} for free, straight in your browser — news, talk, music and sport.
       {totalCount > 0 && ` ${totalCount.toLocaleString('en')} stations available right now.`}
-      Streams play directly from each station’s own servers.
+      Press play on any station: streams come directly from each broadcaster’s own servers, with no app or sign-up.
     </p>
   </section>
 
@@ -134,12 +178,18 @@ const jsonLd = [
     <RadioPlayer countryDefault={cc} />
   </section>
 
+  {isOk && (
+    <div class="container">
+      <AdSlot type="leaderboard" />
+    </div>
+  )}
+
   {shown.length > 0 && (
     <section class="container">
       <div class="section-head">
         <h2>Top {name} radio stations</h2>
         <p>
-          The most-listened stations from {name} on World Radio Stations{popularNames.length >= 3 && `, including ${popularNames.slice(0, -1).join(', ')} and ${popularNames[popularNames.length - 1]}`}.
+          The most-listened stations from {the} on World Radio Stations{popularNames.length >= 3 && `, including ${popularNames.slice(0, -1).join(', ')} and ${popularNames[popularNames.length - 1]}`}.
         </p>
       </div>
       <div class="facet-grid">
@@ -156,6 +206,59 @@ const jsonLd = [
             </a>
           );
         })}
+      </div>
+    </section>
+  )}
+
+  {isOk && (
+    <div class="container">
+      <AdSlot type="native" />
+    </div>
+  )}
+
+  {(guides.length > 0 || posts.length > 0) && (
+    <section class="container country-guides">
+      <div class="section-head">
+        <h2>{name} station guides</h2>
+        <p>Frequencies, history and how to listen to {name}’s best-known stations.</p>
+      </div>
+      {guides.length > 0 && (
+        <div class="facet-grid">
+          {guides.map((g) => (
+            <a class="facet-card" href={`/stations/${g.slug}`}>
+              <span class="facet-name">{g.data.name}</span>
+              <span class="facet-count">{g.data.frequencies[0] ?? g.data.format}</span>
+            </a>
+          ))}
+        </div>
+      )}
+      {posts.length > 0 && (
+        <div class="blog-grid" style="margin-top:1rem;">
+          {posts.map((p) => (
+            <a href={`/blog/${p.slug}`} class="blog-card">
+              <div class="blog-card-body">
+                <h3>{p.data.title}</h3>
+                <p>{p.data.description}</p>
+              </div>
+            </a>
+          ))}
+        </div>
+      )}
+    </section>
+  )}
+
+  {faqs.length > 0 && (
+    <section class="container page-faq" aria-labelledby="country-faq-heading">
+      <div class="section-head">
+        <h2 id="country-faq-heading">{name} radio: frequently asked questions</h2>
+      </div>
+      <div class="faq">
+        {faqs.map((f) => (
+          <details>
+            <summary>{f.q}</summary>
+            <p>{f.a}</p>
+          </details>
+        ))}
       </div>
     </section>
   )}

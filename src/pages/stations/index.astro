@@ -1,5 +1,6 @@
 ---
 import Base from '../../layouts/Base.astro';
+import AdSlot from '../../components/AdSlot.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import { getCollection } from 'astro:content';
 
@@ -46,7 +47,7 @@ const jsonLd = [
   <section class="container blog-index">
     <div class="section-head">
       <h1>Famous radio stations around the world</h1>
-      <p>Guides to some of the best-known radio stations in the world — frequencies, history, owners and programming, plus a live player on every page. Looking for something else? <a href="/#player">Spin the globe</a> to browse thousands of stations, or pick a <a href="/country">country</a>.</p>
+      <p>Guides to some of the best-known radio stations in the world — frequencies, history, owners and programming, plus a live player on every page. Need a quick list of frequencies? See <a href="/blog/uk-radio-stations-frequencies">UK radio frequencies</a> or the <a href="/blog/most-popular-radio-stations-in-the-world">most popular radio stations in the world</a>. Looking for something else? <a href="/#player">Spin the globe</a> to browse thousands of stations, or pick a <a href="/country">country</a>.</p>
     </div>
 
     <div class="genre-filters" data-station-countries>
@@ -80,6 +81,8 @@ const jsonLd = [
     <div class="station-pager">
       <button class="cta cta-secondary" data-station-more type="button" hidden>Load more</button>
     </div>
+
+    <AdSlot type="native" />
   </section>
 </Base>
 

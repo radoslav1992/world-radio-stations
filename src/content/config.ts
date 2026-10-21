@@ -9,6 +9,10 @@ const blog = defineCollection({
     updated: z.string().optional(),
     author: z.string().default('World Radio Stations'),
     tags: z.array(z.string()).default([]),
+    /** <title> override, worded for the search query the post targets. */
+    metaTitle: z.string().optional(),
+    /** Station guide slugs to feature under the post. */
+    stations: z.array(z.string()).default([]),
   }),
 });
 

@@ -1,5 +1,6 @@
 ---
 import Base from '../layouts/Base.astro';
+import AdSlot from '../components/AdSlot.astro';
 import Feature from '../components/Feature.astro';
 import { COUNTRIES } from '../scripts/countries';
 import RadioPlayer from '../components/RadioPlayer.astro';
@@ -136,10 +137,10 @@ const topCountries = COUNTRIES.slice(0, 12);
     <RadioPlayer>
       <div slot="intro" class="hero-intro">
         <p class="eyebrow"><span class="live-dot" aria-hidden="true"></span> Live radio from 200+ countries</p>
-        <h1>Spin the globe.<br /><span class="text-gradient">Tune in to world radio.</span></h1>
+        <h1>World radio stations,<br /><span class="text-gradient">live on a spinning globe.</span></h1>
         <p class="tagline">
-          Thousands of live radio stations from around the world, each one a light on the map — pop, rock,
-          jazz, news and more. Free in your browser, no sign-up.
+          Listen to thousands of radio stations from around the world — pop, rock, jazz, news, talk and
+          sport. Spin the globe, click a country and press play. Free in your browser, no sign-up.
         </p>
         <ul class="trust-row" aria-label="Quick facts">
           <li><strong>1000s</strong> of stations</li>
@@ -149,6 +150,10 @@ const topCountries = COUNTRIES.slice(0, 12);
       </div>
     </RadioPlayer>
   </section>
+
+  <div class="container">
+    <AdSlot type="leaderboard" />
+  </div>
 
   <section id="features" class="container">
     <div class="section-head">
@@ -162,20 +167,34 @@ const topCountries = COUNTRIES.slice(0, 12);
 
   <section class="container about-strip">
     <div class="section-head">
-      <h2>About us</h2>
+      <h2>Listen to radio stations from around the world</h2>
     </div>
     <div class="prose">
       <p>
-        World Radio Stations is a small independent project with one goal: to make radio from
-        anywhere in the world easy to reach — on any device, wherever you are. It’s built by
-        people who love radio and is not affiliated with any particular station or media group.
+        World Radio Stations puts live radio from more than 200 countries in one free player. Every
+        station is a light on the globe: tune in to London talk radio, Brazilian samba, Swiss jazz,
+        Australian indie or the news from home while you’re abroad. Pick a
+        <a href="/country">country</a>, browse by <a href="/moods">mood</a>, or search any station by name
+        or genre.
       </p>
       <p>
-        The catalog is powered by <a href="https://www.radio-browser.info" target="_blank" rel="noopener noreferrer">Radio Browser</a>
-        — an open, community-maintained database. The content itself (music, news, ads)
-        belongs to the respective stations.
+        These are real broadcasters and internet radio stations streaming live — not playlists. Streams
+        play directly from each station’s own servers, so there’s no app to install and no account to
+        create. Your favorites and listening history stay in your browser.
       </p>
-      <p><a class="link-arrow" href="/about">Read more about the project →</a></p>
+      <p>
+        New to online radio? Start with our picks of the
+        <a href="/blog/best-internet-radio-stations">best internet radio stations</a>, the
+        <a href="/blog/most-popular-radio-stations-in-the-world">most popular radio stations in the world</a>,
+        or learn <a href="/blog/how-to-listen-radio-from-another-country">how to listen to radio from another country</a>.
+        Looking for a frequency? See our <a href="/stations">station guides</a> and
+        <a href="/blog/uk-radio-stations-frequencies">UK radio frequencies</a>.
+      </p>
+      <p>
+        World Radio Stations is a small independent project, not affiliated with any station or media
+        group. The catalog comes from <a href="https://www.radio-browser.info" target="_blank" rel="noopener noreferrer">Radio Browser</a>,
+        an open, community-maintained database. <a class="link-arrow" href="/about">More about the project →</a>
+      </p>
     </div>
   </section>
 
@@ -213,6 +232,10 @@ const topCountries = COUNTRIES.slice(0, 12);
       <a class="link-arrow" href="/stations">All station guides →</a>
     </div>
   </section>
+
+  <div class="container">
+    <AdSlot type="native" />
+  </div>
 
   <section class="container">
     <div class="section-head">

@@ -1,0 +1,33 @@
+---
+import { BANNERS, bannerSrc } from '../lib/ads';
+
+// Each banner renders in its own same-origin iframe (/ad-frame?size=728x90).
+// Adsterra's banner code reads a global `atOptions`, so two banners in one
+// document overwrite each other's settings, and its loader is a synchronous
+// script that would block the page while it downloads.
+const units = Object.fromEntries(
+  Object.entries(BANNERS).map(([size, b]) => [size, { ...b, src: bannerSrc(b.key) }]),
+);
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Advertisement</title>
+    <style is:inline>
+      html, body { margin: 0; padding: 0; overflow: hidden; background: transparent; }
+      body { display: flex; justify-content: center; align-items: center; }
+    </style>
+  </head>
+  <body>
+    <script is:inline define:vars={{ units }}>
+      var unit = units[new URLSearchParams(location.search).get('size') || ''];
+      if (unit) {
+        window.atOptions = { key: unit.key, format: 'iframe', height: unit.height, width: unit.width, params: {} };
+        document.write('<script src="' + unit.src + '"><\/script>');
+      }
+    </script>
+  </body>
+</html>

@@ -1,9 +1,10 @@
 ---
 import Base from '../../layouts/Base.astro';
+import AdSlot from '../../components/AdSlot.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import RadioPlayer from '../../components/RadioPlayer.astro';
 import { getCollection } from 'astro:content';
-import { COUNTRIES } from '../../scripts/countries';
+import { ALL_COUNTRY_CODES, countryName, inCountry } from '../../scripts/countries';
 
 export async function getStaticPaths() {
   const stations = await getCollection('stations');
@@ -19,7 +20,7 @@ const { Content } = await station.render();
 const SITE_URL = 'https://worldradiostations.org';
 
 const d = station.data;
-const countryCode = COUNTRIES.find((c) => c.name === d.country)?.code ?? '';
+const countryCode = ALL_COUNTRY_CODES.find((code) => countryName(code) === d.country) ?? '';
 
 // Same-country profiles first (that's what people compare against), then
 // same-format ones from elsewhere.
@@ -37,6 +38,14 @@ const clip = (text: string, max = 158) => {
 };
 
 const howToListen = d.frequencies.length ? d.frequencies.join(', ') : 'online streaming';
+const hasBroadcast = d.frequencies.some((f) => /\b(FM|AM|MW|LW|DAB|kHz|MHz)\b/.test(f));
+const heading = hasBroadcast ? `${d.name} frequency & live stream` : `${d.name}: live stream & station guide`;
+
+// Blog posts that feature or link to this guide.
+const relatedPosts = (await getCollection('blog'))
+  .filter((p) => p.data.stations.includes(station.slug) || (p.body || '').includes(`/stations/${station.slug})`))
+  .sort((a, b) => new Date(b.data.updated ?? b.data.date).getTime() - new Date(a.data.updated ?? a.data.date).getTime())
+  .slice(0, 3);
 const websiteHost = d.website ? d.website.replace(/^https?:\/\//, '').replace(/\/$/, '') : '';
 
 // Most search traffic to these pages is "<station> frequency" or
@@ -51,7 +60,7 @@ const playerSearch = d.playerSearch ?? d.name.replace(/\s*\([^)]*\)/g, '').trim(
 // One-sentence answer for the "which country / who owns / how to listen"
 // queries these pages rank for.
 const quickAnswer = [
-  `${d.name} is a ${d.format.toLowerCase()} radio station from ${d.country}`,
+  `${d.name} is a ${d.format.toLowerCase()} radio station from ${inCountry(d.country)}`,
   d.owner ? `owned by ${d.owner}` : '',
   d.founded ? `on air since ${d.founded}` : '',
 ].filter(Boolean).join(', ') + '.';
@@ -69,7 +78,7 @@ const faqs: { q: string; a: string }[] = [
       }]),
   {
     q: `Which country is ${d.name} from?`,
-    a: `${d.name} is a radio station from ${d.country}${d.headquarters ? `, headquartered in ${d.headquarters}` : ''}. It broadcasts in ${d.language}.`,
+    a: `${d.name} is a radio station from ${inCountry(d.country)}${d.headquarters ? `, headquartered in ${d.headquarters}` : ''}. It broadcasts in ${d.language}.`,
   },
   ...(d.owner ? [{ q: `Who owns ${d.name}?`, a: `${d.name} is owned by ${d.owner}.` }] : []),
   {
@@ -117,12 +126,26 @@ const jsonLd = {
 
   <article>
     <div class="container legal blog-post station-top">
-      <h1>{d.name}</h1>
+      <h1>{heading}</h1>
 
-      <p><strong>{quickAnswer}</strong></p>
+      <div class="answer-box">
+        <p><strong>{quickAnswer}</strong> How to listen:</p>
+        {d.frequencies.length > 0
+          ? <ul>{d.frequencies.map((f) => <li>{f}</li>)}</ul>
+          : <ul><li>Online stream</li></ul>}
+        <div class="answer-actions">
+          {countryCode && (
+            <a class="cta" href="#listen">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+              Listen live now
+            </a>
+          )}
+          <a class="cta cta-secondary" href="#frequencies">Frequency details</a>
+        </div>
+      </div>
 
       <div class="station-infobox">
-        <table>
+        <table><tbody>
           {d.format && <tr><th>Format</th><td>{d.format}</td></tr>}
           {d.founded && <tr><th>Founded</th><td>{d.founded}</td></tr>}
           {d.owner && <tr><th>Owner</th><td>{d.owner}</td></tr>}
@@ -134,14 +157,15 @@ const jsonLd = {
           <tr><th>Language</th><td>{d.language}</td></tr>
           {countryCode && <tr><th>Country</th><td><a href={`/country/${countryCode.toLowerCase()}`}>{d.country}</a></td></tr>}
           {!countryCode && <tr><th>Country</th><td>{d.country}</td></tr>}
-        </table>
+        </tbody></table>
       </div>
 
       <h2 id="frequencies">{d.name} frequency &amp; how to listen</h2>
-      {d.frequencies.length > 0
-        ? <ul>{d.frequencies.map((f) => <li>{f}</li>)}</ul>
-        : <p>{d.name} streams online.</p>}
-      {frequencyAnswer && <p>{frequencyAnswer}</p>}
+      {frequencyAnswer
+        ? <p>{frequencyAnswer}</p>
+        : <p>{d.name} is available on {howToListen}. You can also stream it live with the player below.</p>}
+
+      <AdSlot type="rectangle" />
     </div>
 
     {countryCode && (
@@ -149,7 +173,7 @@ const jsonLd = {
         <div class="section-head">
           <h2 id="listen-heading">Listen to {d.name} live</h2>
           <p>
-            Live radio from {d.country}, filtered to {d.name}. Press play to start the stream — or clear
+            Live radio from {inCountry(d.country)}, filtered to {d.name}. Press play to start the stream — or clear
             the search to browse every {d.country} station.
           </p>
         </div>
@@ -159,6 +183,7 @@ const jsonLd = {
 
     <div class="container legal blog-post station-body">
       <Content />
+      <AdSlot type="native" before=".station-body > h2:nth-of-type(3)" />
 
       <section class="station-faq" aria-labelledby="faq-heading">
         <h2 id="faq-heading">{d.name}: frequently asked questions</h2>
@@ -171,6 +196,22 @@ const jsonLd = {
           ))}
         </div>
       </section>
+
+      {relatedPosts.length > 0 && (
+        <section class="post-related" aria-labelledby="related-posts-heading">
+          <h2 id="related-posts-heading">Read more about {d.name}</h2>
+          <div class="blog-grid">
+            {relatedPosts.map((p) => (
+              <a href={`/blog/${p.slug}`} class="blog-card">
+                <div class="blog-card-body">
+                  <h3>{p.data.title}</h3>
+                  <p>{p.data.description}</p>
+                </div>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
 
       {similar.length > 0 && (
         <div class="similar-stations">
@@ -193,7 +234,7 @@ const jsonLd = {
       )}
 
       <div class="blog-cta">
-        <p>Explore more radio from {d.country}, or go straight to {d.name}’s official site.</p>
+        <p>Explore more radio from {inCountry(d.country)}, or go straight to {d.name}’s official site.</p>
         <div class="hero-ctas">
           {countryCode && (
             <a class="cta cta-secondary" href={`/country/${countryCode.toLowerCase()}`}>{d.country} radio stations</a>
