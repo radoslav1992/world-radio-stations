@@ -5,7 +5,7 @@ founded: "1967"
 owner: "BBC (British Broadcasting Corporation)"
 headquarters: "London, United Kingdom"
 format: "Classical / Jazz / Arts"
-frequencies: ["UK 90.2–92.4 FM", "DAB digital radio", "Online via BBC Sounds"]
+frequencies: ["UK 90.2–92.6 FM", "DAB digital radio", "Online via BBC Sounds"]
 website: "https://www.bbc.co.uk/radio3"
 language: "English"
 country: "United Kingdom"
@@ -23,7 +23,7 @@ The station's core output is classical music, ranging from early music to contem
 
 ## Reach
 
-Radio 3 broadcasts across the United Kingdom on FM between 90.2 and 92.4 MHz and on DAB digital radio, and streams worldwide via BBC Sounds. While its audience is smaller than the BBC's mainstream networks, it serves a dedicated national listenership for classical music and the arts.
+Radio 3 broadcasts across the United Kingdom on FM between 90.2 and 92.6 MHz and on DAB digital radio, and streams worldwide via BBC Sounds. While its audience is smaller than the BBC's mainstream networks, it serves a dedicated national listenership for classical music and the arts.
 
 ## Significance
 

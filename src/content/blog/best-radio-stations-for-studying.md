@@ -62,7 +62,7 @@ Lo-fi hip hop — soft, looping beats with a dusty, vinyl feel — is closely ti
 
 ### 7. BBC Radio 3
 
-The BBC’s classical station broadcasts across the UK on 90.2–92.4 FM and on DAB. It plays classical music from early music to new commissions, along with jazz, world music and complete live concerts. It has presenters and some speech, so it’s less hands-off than the Swiss stations, but its daytime music sequences are excellent company. Stream it live on its [station guide](/stations/bbc-radio-3). Outside the UK, which BBC streams you can hear varies; see [how to listen to radio from another country](/blog/how-to-listen-radio-from-another-country).
+The BBC’s classical station broadcasts across the UK on 90.2–92.6 FM and on DAB. It plays classical music from early music to new commissions, along with jazz, world music and complete live concerts. It has presenters and some speech, so it’s less hands-off than the Swiss stations, but its daytime music sequences are excellent company. Stream it live on its [station guide](/stations/bbc-radio-3). Outside the UK, which BBC streams you can hear varies; see [how to listen to radio from another country](/blog/how-to-listen-radio-from-another-country).
 
 **Best for:** daytime study when you’d like some human company between pieces.
 
