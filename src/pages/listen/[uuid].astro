@@ -1,9 +1,10 @@
 ---
 import Base from '../../layouts/Base.astro';
+import AdSlot from '../../components/AdSlot.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import RadioPlayer from '../../components/RadioPlayer.astro';
 import { getCollection } from 'astro:content';
-import { countryName } from '../../scripts/countries';
+import { countryName, inCountry } from '../../scripts/countries';
 
 export const prerender = false;
 
@@ -43,6 +44,8 @@ const countryCode = str(station?.countrycode).toUpperCase();
 const country = countryCode ? countryName(countryCode) : str(station?.country);
 const region = str(station?.state);
 const place = [region, country].filter(Boolean).join(', ');
+// Mid-sentence form: "from the United Kingdom", "from Bavaria, Germany".
+const placeIn = region ? place : inCountry(country);
 const genres: string[] = [...new Set<string>(
   str(station?.tags).split(',').map((t: string) => t.trim().toLowerCase()).filter((t: string) => t && t.length <= 30),
 )].slice(0, 5);
@@ -83,16 +86,43 @@ const profile = station
     )
   : undefined;
 
+const faqs = station
+  ? [
+      {
+        q: `How can I listen to ${name} live?`,
+        a: `Press play on the player at the top of this page and ${name} streams live in your browser — free, with no app or account. Tap the star to save it to your favorites so it’s one click away next time.`,
+      },
+      ...(place
+        ? [{ q: `Where is ${name} from?`, a: `${name} broadcasts from ${placeIn}${languages.length ? ` in ${joinList(languages)}` : ''}.` }]
+        : []),
+      ...(genres.length
+        ? [{ q: `What does ${name} play?`, a: `${name} is listed under ${joinList(genres.slice(0, 4))}.${quality ? ` Its online stream is ${quality}.` : ''}` }]
+        : []),
+      {
+        q: `Can I listen to ${name} outside ${country || 'its home country'}?`,
+        a: `Yes — the stream works anywhere with an internet connection. If it doesn’t start, the station may be offline for a moment or restricting some programmes by region; try again later or pick another ${country ? `${country} ` : ''}station below.`,
+      },
+    ]
+  : [];
+
 const title = station
   ? `${name} Live — Listen Online Free${country ? ` | ${country} Radio` : ''}`
   : 'Station not found — World Radio Stations';
 const description = station
-  ? `Listen to ${name} live online for free${genres.length ? ` — ${genres.slice(0, 3).join(', ')} radio` : ''}${place ? ` from ${place}` : ''}. Streams in your browser, no app or sign-up needed.`
+  ? `Listen to ${name} live online for free${genres.length ? ` — ${genres.slice(0, 3).join(', ')} radio` : ''}${place ? ` from ${placeIn}` : ''}. Streams in your browser, no app or sign-up needed.`
   : 'This radio station is no longer available. Browse thousands of other live stations from around the world.';
 const ogImage = typeof station?.favicon === 'string' && station.favicon.startsWith('https://') ? station.favicon : '/og.png';
 
 const jsonLd = station
-  ? {
+  ? [{
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: faqs.map((f) => ({
+        '@type': 'Question',
+        name: f.q,
+        acceptedAnswer: { '@type': 'Answer', text: f.a },
+      })),
+    }, {
       '@context': 'https://schema.org',
       '@type': 'RadioStation',
       name,
@@ -106,7 +136,7 @@ const jsonLd = station
         '@type': 'WebPage',
         '@id': `https://worldradiostations.org/listen/${station.stationuuid}`,
       },
-    }
+    }]
   : undefined;
 ---
 <Base
@@ -115,6 +145,7 @@ const jsonLd = station
   ogImage={ogImage}
   jsonLd={jsonLd}
   noindex={!station}
+  ads={Boolean(station)}
 >
   {station ? (
     <>
@@ -144,13 +175,17 @@ const jsonLd = station
         <RadioPlayer autoplay={station.stationuuid} countryDefault={countryCode} />
       </section>
 
+      <div class="container">
+        <AdSlot type="leaderboard" />
+      </div>
+
       <section class="container listen-about" aria-labelledby="about-heading">
         <div class="section-head">
           <h2 id="about-heading">About {name}</h2>
         </div>
         <div class="prose">
           <p>
-            {name} is a radio station{place && ` from ${place}`}{languages.length > 0 && ` broadcasting in ${joinList(languages)}`}{genres.length > 0 && `, with ${joinList(genres.slice(0, 3))} programming`}.
+            {name} is a radio station{place && ` from ${placeIn}`}{languages.length > 0 && ` broadcasting in ${joinList(languages)}`}{genres.length > 0 && `, with ${joinList(genres.slice(0, 3))} programming`}.
           </p>
           <p>
             Listen to {name} live online for free with the player above. The stream{quality && ` (${quality})`} plays
@@ -161,7 +196,7 @@ const jsonLd = station
           )}
         </div>
         <div class="station-infobox">
-          <table>
+          <table><tbody>
             {country && countryCode && <tr><th>Country</th><td><a href={`/country/${countryCode.toLowerCase()}`}>{country}</a></td></tr>}
             {country && !countryCode && <tr><th>Country</th><td>{country}</td></tr>}
             {region && <tr><th>Region</th><td>{region}</td></tr>}
@@ -172,14 +207,14 @@ const jsonLd = station
               <tr><th>Website</th><td><a href={homepage} target="_blank" rel="noopener noreferrer">{homepageHost}</a></td></tr>
             )}
             {votes > 0 && <tr><th>Listener votes</th><td>{votes.toLocaleString('en')}</td></tr>}
-          </table>
+          </tbody></table>
         </div>
       </section>
 
       {moreStations.length > 0 && (
         <section class="container" aria-labelledby="more-heading">
           <div class="section-head">
-            <h2 id="more-heading">More radio stations from {country}</h2>
+            <h2 id="more-heading">More radio stations from {inCountry(country)}</h2>
           </div>
           <div class="facet-grid">
             {moreStations.map((s) => (
@@ -192,6 +227,24 @@ const jsonLd = station
           <p style="margin-top:1.5rem;"><a class="link-arrow" href={`/country/${countryCode.toLowerCase()}`}>All {country} radio stations →</a></p>
         </section>
       )}
+
+      <div class="container">
+        <AdSlot type="native" />
+      </div>
+
+      <section class="container page-faq" aria-labelledby="listen-faq-heading">
+        <div class="section-head">
+          <h2 id="listen-faq-heading">{name}: frequently asked questions</h2>
+        </div>
+        <div class="faq">
+          {faqs.map((f) => (
+            <details>
+              <summary>{f.q}</summary>
+              <p>{f.a}</p>
+            </details>
+          ))}
+        </div>
+      </section>
     </>
   ) : (
     <section class="container not-found">

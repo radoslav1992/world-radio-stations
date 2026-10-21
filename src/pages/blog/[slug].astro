@@ -1,5 +1,6 @@
 ---
 import Base from '../../layouts/Base.astro';
+import AdSlot from '../../components/AdSlot.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import { getCollection } from 'astro:content';
 
@@ -15,6 +16,23 @@ const { post } = Astro.props;
 const { Content } = await post.render();
 
 const SITE_URL = 'https://worldradiostations.org';
+
+const formatDate = (iso: string) =>
+  new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+// Station guides the post is about, shown as cards under it.
+const allStations = await getCollection('stations');
+const featured = post.data.stations
+  .map((slug) => allStations.find((s) => s.slug === slug))
+  .filter((s): s is NonNullable<typeof s> => Boolean(s));
+
+// Related posts: most shared tags first, newest as the tie-breaker.
+const related = (await getCollection('blog'))
+  .filter((p) => p.slug !== post.slug)
+  .map((p) => ({ p, shared: p.data.tags.filter((t) => post.data.tags.includes(t)).length }))
+  .sort((a, b) => b.shared - a.shared || new Date(b.p.data.date).getTime() - new Date(a.p.data.date).getTime())
+  .slice(0, 3)
+  .map(({ p }) => p);
 
 const body = post.body || '';
 const wordCount = body.split(/\s+/).filter(Boolean).length;
@@ -47,7 +65,7 @@ const jsonLd = {
 };
 ---
 <Base
-  title={`${post.data.title} — World Radio Stations`}
+  title={post.data.metaTitle ?? `${post.data.title} — World Radio Stations`}
   description={post.data.description}
   ogType="article"
   jsonLd={jsonLd}
@@ -64,25 +82,53 @@ const jsonLd = {
   <article class="container legal blog-post">
     <h1>{post.data.title}</h1>
     <p class="updated">
-      <time datetime={post.data.date}>
-        {new Date(post.data.date).toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        })}
-      </time>
+      {post.data.updated
+        ? <span>Updated <time datetime={post.data.updated}>{formatDate(post.data.updated)}</time></span>
+        : <time datetime={post.data.date}>{formatDate(post.data.date)}</time>}
       {post.data.author && <span> · {post.data.author}</span>}
       <span> · {readingTime} min read</span>
     </p>
 
     <Content />
+    <AdSlot type="rectangle" before=".blog-post > h2:nth-of-type(2)" />
+    <AdSlot type="native" before=".blog-post > h2:nth-of-type(5)" />
+
+    {featured.length > 0 && (
+      <section class="post-stations" aria-labelledby="post-stations-heading">
+        <h2 id="post-stations-heading">Station guides from this article</h2>
+        <div class="facet-grid">
+          {featured.map((s) => (
+            <a class="facet-card" href={`/stations/${s.slug}`}>
+              <span class="facet-name">{s.data.name}</span>
+              <span class="facet-count">{s.data.frequencies[0] ?? s.data.country}</span>
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
 
     <div class="blog-cta">
-      <p>Want to hear these stations live?</p>
+      <p>Want to hear these stations live? Spin the globe or pick a country — free, no sign-up.</p>
       <div class="hero-ctas">
-        <a class="cta cta-secondary" href="/#player">Listen online</a>
-        <a class="cta cta-secondary" href="/blog">All articles</a>
+        <a class="cta" href="/#player">Listen online</a>
+        <a class="cta cta-secondary" href="/country">Radio by country</a>
       </div>
     </div>
+
+    {related.length > 0 && (
+      <section class="post-related" aria-labelledby="related-heading">
+        <h2 id="related-heading">Keep reading</h2>
+        <div class="blog-grid">
+          {related.map((p) => (
+            <a href={`/blog/${p.slug}`} class="blog-card">
+              <div class="blog-card-body">
+                <h3>{p.data.title}</h3>
+                <p>{p.data.description}</p>
+              </div>
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
   </article>
 </Base>

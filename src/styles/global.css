@@ -403,7 +403,7 @@ section.player-section { padding-block: 1.25rem 3rem; }
 }
 .listen-head h1 { margin: 0 0 0.45rem; }
 .listen-head .page-sub { max-width: 680px; }
-.listen-links { margin-top: 0.75rem; }
+.listen-links { display: flex; flex-wrap: wrap; gap: 0.4rem 1.25rem; margin-top: 0.75rem; }
 .listen-links a { color: var(--accent-2); text-decoration: none; font-weight: 600; }
 .station-empty { text-align: center; color: var(--text-muted); padding: 2rem 1rem; }
 
@@ -1737,6 +1737,30 @@ a.facet-card:hover {
   text-align: center;
 }
 .blog-cta p { color: var(--text-muted); margin: 0 0 1rem; }
+.post-stations, .post-related { padding: 0; margin-top: 3rem; }
+.post-stations h2, .post-related h2 { font-size: 1.3rem; margin: 0 0 1rem; }
+.legal > table { display: block; max-width: 100%; overflow-x: auto; }
+
+/* Quick answer box at the top of station guides */
+.answer-box {
+  margin: 1.25rem 0 2rem;
+  padding: 1.1rem 1.25rem;
+  border-radius: var(--radius);
+  background: linear-gradient(135deg, rgba(255, 122, 61, 0.1), rgba(111, 155, 255, 0.06));
+  border: 1px solid rgba(255, 181, 71, 0.28);
+}
+.answer-box p { margin: 0 0 0.6rem; color: var(--text); }
+.answer-box ul { margin: 0; padding-left: 1.2rem; }
+.answer-box li { margin-bottom: 0.25rem; color: var(--text); font-weight: 600; }
+.answer-box .answer-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.9rem; }
+.answer-box .cta { padding: 0.55rem 1.05rem; font-size: 0.9rem; }
+.legal a.cta { color: var(--on-accent); }
+.legal a.cta.cta-secondary { color: var(--text); }
+
+/* Country / listen page copy blocks */
+.country-guides { padding-top: 1rem; }
+.page-faq { padding-top: 1rem; }
+.page-faq .faq { max-width: 820px; margin: 0 auto; }
 
 /* Station directory & infobox */
 .station-directory {
@@ -1807,26 +1831,46 @@ a.facet-card:hover {
 .backup-status { flex-basis: 100%; margin: 0; min-height: 1.2em; font-size: 0.88rem; color: var(--accent-2); }
 .backup-status:empty { display: none; }
 
-/* Ad slot placeholder */
-.ad-slot { max-width: var(--max); margin: 1.5rem auto; padding: 0 1.5rem; }
-.ad-placeholder {
+/* Ads (Adsterra). Banner space is reserved so nothing jumps when they load. */
+.ad {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  max-width: 100%;
+  margin: 2.25rem auto;
+}
+.ad[hidden], [data-ads="off"] .ad { display: none !important; }
+.ad-label {
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  opacity: 0.75;
+}
+.ad-frame {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  border: 1px dashed var(--border-strong);
-  border-radius: var(--radius);
-  background: rgba(255, 255, 255, 0.02);
-  color: var(--text-muted);
-  font-size: 0.74rem;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
+  max-width: 100%;
+  overflow: hidden;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.025);
 }
-.ad-horizontal .ad-placeholder { min-height: 100px; }
-.ad-square .ad-placeholder { min-height: 250px; max-width: 300px; margin: 0 auto; }
-.ad-in-feed .ad-placeholder { min-height: 200px; }
-.ad-placeholder-label::before { content: '— '; }
-.ad-placeholder-label::after { content: ' —'; }
+.ad-frame iframe { display: block; max-width: 100%; border: 0; }
+.ad-leaderboard .ad-frame { width: 320px; height: 50px; }
+.ad-rectangle .ad-frame { width: 300px; height: 250px; }
+.ad-native { width: 100%; }
+.ad-native .ad-frame { display: block; width: 100%; background: none; border-radius: 0; }
+.ad-native .ad-label { display: none; }
+.ad-native.is-filled .ad-label { display: block; }
+/* Keep in sync with LEADERBOARD_MIN_WIDTH in src/lib/ads.ts. */
+@media (min-width: 780px) {
+  .ad-leaderboard .ad-frame { width: 728px; height: 90px; }
+}
+.ad-footer { margin-block: 1rem 0; }
+.legal .ad, .listen-about .ad { margin-block: 2rem; }
 
 /* 404 */
 .not-found { min-height: 60vh; display: flex; align-items: center; justify-content: center; padding-block: 4rem; }

@@ -29,7 +29,7 @@ Weekday output is built around live news sequences, with breakfast and drivetime
 
 ## Reach
 
-5 Live broadcasts across the United Kingdom on medium wave frequencies of 693 and 909 kHz and on DAB digital radio, and is available online through BBC Sounds. Rights restrictions mean some live sports commentaries are limited to UK listeners.
+5 Live broadcasts across the United Kingdom on medium wave frequencies of 693 and 909 kHz and on DAB digital radio, and is available online through BBC Sounds. The BBC began switching off some of 5 Live’s smaller AM transmitters in 2026 as part of a wider move away from AM, so DAB or BBC Sounds is the most future-proof way to listen — see our [UK radio frequencies guide](/blog/uk-radio-stations-frequencies). Rights restrictions mean some live sports commentaries are limited to UK listeners.
 
 ## Significance
 

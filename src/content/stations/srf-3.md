@@ -5,7 +5,7 @@ founded: "1983"
 owner: "Schweizer Radio und Fernsehen (SRF / SRG SSR)"
 headquarters: "Zurich, Switzerland"
 format: "Pop / Rock"
-frequencies: ["German-speaking Switzerland on FM and DAB+", "Online via SRF"]
+frequencies: ["German-speaking Switzerland on DAB+", "Online via SRF"]
 website: "https://www.srf.ch/radio-srf-3"
 language: "German"
 country: "Switzerland"
@@ -22,7 +22,7 @@ The station plays contemporary pop and rock for a broad adult audience, combined
 
 ## Reach
 
-SRF 3 broadcasts across German-speaking Switzerland on FM and DAB+ and streams online via SRF.
+SRF 3 broadcasts across German-speaking Switzerland on DAB+ digital radio and streams online via SRF. Like the rest of SRG SSR’s radio stations, it left FM at the end of 2024 as part of Switzerland’s move to digital radio.
 
 ## Significance
 

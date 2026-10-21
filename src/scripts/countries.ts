@@ -77,3 +77,10 @@ export function countryName(code: string | null | undefined): string {
   }
   try { return displayNames?.of(cc) || cc; } catch { return cc; }
 }
+
+const NEEDS_THE = /^(United |Netherlands|Philippines|Czech Republic|Dominican Republic|Bahamas|Gambia|Maldives|Central African|Democratic Republic|Republic of|Cayman|Falkland|Faroe|Marshall|Solomon|Virgin|Turks|Comoros|Seychelles|Vatican)/;
+
+/** "the United Kingdom", "the Netherlands", but "France" — for use mid-sentence. */
+export function inCountry(name: string): string {
+  return NEEDS_THE.test(name) ? `the ${name}` : name;
+}

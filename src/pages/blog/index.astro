@@ -1,5 +1,6 @@
 ---
 import Base from '../../layouts/Base.astro';
+import AdSlot from '../../components/AdSlot.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import { getCollection } from 'astro:content';
 
@@ -24,8 +25,8 @@ const jsonLd = {
 };
 ---
 <Base
-  title="Blog — World Radio Stations"
-  description="Articles about radio around the world, the music scene, internet streaming and tips for listeners."
+  title="Radio Guides: Best Stations, Frequencies & Listening Tips"
+  description="Guides to the best radio stations in the world, UK frequencies, internet radio and how to listen to radio from another country — free to stream online."
   jsonLd={jsonLd}
 >
   <Breadcrumbs crumbs={[
@@ -35,8 +36,8 @@ const jsonLd = {
 
   <section class="container blog-index">
     <div class="section-head">
-      <h1>Blog</h1>
-      <p>Articles about radio around the world, music and useful tips for listeners.</p>
+      <h1>Radio guides &amp; blog</h1>
+      <p>The best stations to stream, frequencies for famous broadcasters, and practical tips for listening to radio from anywhere in the world.</p>
     </div>
 
     <div class="blog-grid">
@@ -62,5 +63,7 @@ const jsonLd = {
         </a>
       ))}
     </div>
+
+    <AdSlot type="native" />
   </section>
 </Base>

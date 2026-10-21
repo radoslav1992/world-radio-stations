@@ -1,33 +1,99 @@
 ---
 /**
- * Reserved ad slot — placeholder that holds layout so AdSense ads can drop in
- * after approval without causing CLS. To activate:
- *   1. Replace ca-pub-XXXXXXXXXXXXXXXX in src/layouts/Base.astro with your ID
- *      and uncomment the adsbygoogle script.
- *   2. Replace XXXXXXXXXX below with the slot ID from your AdSense dashboard.
- *   3. Remove the .ad-placeholder div and uncomment the <ins> tag + push script.
+ * Adsterra ad slot. Nothing loads until the slot is about to scroll into view,
+ * and banner space is reserved up front so the page doesn't jump.
+ *
+ *   leaderboard  728x90 on wide screens, 320x50 on phones
+ *   rectangle    300x250
+ *   native       native banner (one per page: Adsterra finds it by id)
+ *
+ * `before` moves the slot in front of the first element matching a selector
+ * (e.g. the second <h2> of an article) while the page is still parsing, so
+ * the slot must come after that element in the markup.
  */
 interface Props {
-  /** Friendly slot label used in dev placeholder. */
-  label?: string;
-  /** Slot format hint. Affects min-height of placeholder. */
-  format?: 'horizontal' | 'square' | 'in-feed';
-  /** Replace with your real ad-slot ID after AdSense approval. */
-  slotId?: string;
+  type: 'leaderboard' | 'rectangle' | 'native';
+  before?: string;
+  class?: string;
 }
-const { label = 'Advertisement', format = 'horizontal', slotId = 'XXXXXXXXXX' } = Astro.props;
+const { type, before, class: className } = Astro.props;
 ---
-<div class={`ad-slot ad-${format}`} data-ad-slot={slotId} role="complementary" aria-label={label}>
-  <div class="ad-placeholder">
-    <span class="ad-placeholder-label">{label}</span>
-  </div>
-  {/*
-  <ins class="adsbygoogle"
-       style="display:block"
-       data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
-       data-ad-slot={slotId}
-       data-ad-format="auto"
-       data-full-width-responsive="true"></ins>
-  <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-  */}
-</div>
+<aside class:list={['ad', `ad-${type}`, className]} data-ad={type} aria-label="Advertisement">
+  <span class="ad-label">Advertisement</span>
+  <div class="ad-frame" data-ad-frame></div>
+</aside>
+{before && (
+  <script is:inline define:vars={{ before }}>
+    var slot = document.currentScript.previousElementSibling;
+    var target = document.querySelector(before);
+    if (slot && target && target.parentNode) target.parentNode.insertBefore(slot, target);
+  </script>
+)}
+
+<script>
+  import { BANNERS, LEADERBOARD_MIN_WIDTH, NATIVE_KEY, NATIVE_SRC, type BannerSize } from '../lib/ads';
+
+  const slots = Array.from(document.querySelectorAll<HTMLElement>('[data-ad]'));
+  // Base.astro sets data-ads="off" for visitors who declined cookies.
+  const adsOff = () => document.documentElement.dataset.ads === 'off';
+
+  const mountBanner = (frame: HTMLElement, size: BannerSize) => {
+    const { width, height } = BANNERS[size];
+    const iframe = document.createElement('iframe');
+    iframe.src = `/ad-frame?size=${size}`;
+    iframe.width = String(width);
+    iframe.height = String(height);
+    iframe.title = 'Advertisement';
+    iframe.setAttribute('scrolling', 'no');
+    frame.append(iframe);
+  };
+
+  const mountNative = (slot: HTMLElement, frame: HTMLElement) => {
+    const id = `container-${NATIVE_KEY}`;
+    if (document.getElementById(id)) {
+      slot.hidden = true;
+      return;
+    }
+    const box = document.createElement('div');
+    box.id = id;
+    // Only show the "Advertisement" label once something actually rendered.
+    new MutationObserver((_, obs) => {
+      if (box.childElementCount) {
+        slot.classList.add('is-filled');
+        obs.disconnect();
+      }
+    }).observe(box, { childList: true });
+    const script = document.createElement('script');
+    script.async = true;
+    script.dataset.cfasync = 'false';
+    script.src = NATIVE_SRC;
+    frame.append(box, script);
+  };
+
+  const mount = (slot: HTMLElement) => {
+    const frame = slot.querySelector<HTMLElement>('[data-ad-frame]');
+    if (!frame || adsOff() || frame.childElementCount) return;
+    const type = slot.dataset.ad;
+    if (type === 'native') mountNative(slot, frame);
+    else if (type === 'rectangle') mountBanner(frame, '300x250');
+    else {
+      const wide = window.matchMedia(`(min-width: ${LEADERBOARD_MIN_WIDTH}px)`).matches;
+      mountBanner(frame, wide ? '728x90' : '320x50');
+    }
+  };
+
+  if (slots.length && !adsOff()) {
+    if ('IntersectionObserver' in window) {
+      const io = new IntersectionObserver((entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          io.unobserve(entry.target);
+          mount(entry.target as HTMLElement);
+        }
+      }, { rootMargin: '400px 0px' });
+      slots.forEach((slot) => io.observe(slot));
+    } else {
+      slots.forEach(mount);
+    }
+  }
+</script>

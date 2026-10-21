@@ -1,5 +1,7 @@
 ---
 import '../styles/global.css';
+import AdSlot from '../components/AdSlot.astro';
+import { CONSENT_KEY, RESPECT_CONSENT_REJECT } from '../lib/ads';
 
 interface Props {
   title: string;
@@ -20,6 +22,8 @@ interface Props {
   noindex?: boolean;
   /** OG article tags for blog posts. */
   articleTags?: string[];
+  /** Show the leaderboard ad above the footer (off for legal and error pages). */
+  ads?: boolean;
 }
 
 const SITE_URL = 'https://worldradiostations.org';
@@ -37,6 +41,7 @@ const {
   articleAuthor,
   noindex = false,
   articleTags = [],
+  ads = true,
 } = Astro.props;
 
 const path = Astro.url.pathname.replace(/\/$/, '') || '/';
@@ -115,6 +120,14 @@ const jsonLdArr = [orgJsonLd, ...(jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [js
     <!-- Google tag (gtag.js) with Consent Mode v2.
          Storage consent defaults to denied; the cookie banner upgrades it.
          Must run before the gtag.js loader. -->
+    {RESPECT_CONSENT_REJECT && (
+      <script is:inline define:vars={{ CONSENT_KEY }}>
+        try {
+          if (localStorage.getItem(CONSENT_KEY) === 'reject') document.documentElement.dataset.ads = 'off';
+        } catch (e) {}
+      </script>
+    )}
+
     <script is:inline>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
@@ -181,6 +194,12 @@ const jsonLdArr = [orgJsonLd, ...(jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [js
       <slot />
     </main>
 
+    {ads && (
+      <div class="container">
+        <AdSlot type="leaderboard" class="ad-footer" />
+      </div>
+    )}
+
     <footer class="site">
       <div class="container footer-grid">
         <div class="footer-col footer-brand">
@@ -227,8 +246,8 @@ const jsonLdArr = [orgJsonLd, ...(jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [js
           <p>
             Necessary storage remembers your choices (player, favorites, view).
             With your consent we also use Google Analytics to understand how the
-            site is used, and in future to show ads. Details in our
-            <a href="/privacy-policy">Privacy Policy</a>.
+            site is used, and our advertising partner Adsterra shows ads that keep
+            the site free. Details in our <a href="/privacy-policy">Privacy Policy</a>.
           </p>
         </div>
         <div class="consent-actions">
@@ -239,15 +258,20 @@ const jsonLdArr = [orgJsonLd, ...(jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [js
     </div>
 
     <script>
+      import { CONSENT_KEY, RESPECT_CONSENT_REJECT as RESPECT_REJECT } from '../lib/ads';
+
       // Cookie consent: hide if a choice was already made; persist on click.
       (() => {
-        const KEY = 'wrs-consent-v1';
+        const KEY = CONSENT_KEY;
         const banner = document.querySelector('[data-consent]') as HTMLElement | null;
         if (!banner) return;
         if (localStorage.getItem(KEY)) return;
         banner.hidden = false;
         const close = (value: 'accept' | 'reject') => {
           try { localStorage.setItem(KEY, value); } catch {}
+          if (value === 'reject' && RESPECT_REJECT) {
+            document.documentElement.dataset.ads = 'off';
+          }
           if (value === 'accept') {
             (window as any).gtag?.('consent', 'update', {
               ad_storage: 'granted',

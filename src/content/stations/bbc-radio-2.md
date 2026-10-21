@@ -27,7 +27,7 @@ The station's daytime output centres on melodic pop from the 1970s to the presen
 
 ## Reach
 
-Radio 2 broadcasts across the United Kingdom on FM between 88 and 90.2 MHz and on DAB digital radio, and streams worldwide through the BBC Sounds platform. It routinely records the largest weekly audience of any UK radio station, reaching well over ten million listeners.
+Radio 2 broadcasts across the United Kingdom on FM between 88 and 90.2 MHz and on DAB digital radio, and streams on BBC Sounds in the UK. It routinely records the largest weekly audience of any UK radio station, reaching well over ten million listeners.
 
 ## Significance
 

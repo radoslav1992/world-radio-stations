@@ -1,5 +1,6 @@
 ---
 import Base from '../../layouts/Base.astro';
+import AdSlot from '../../components/AdSlot.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import RadioPlayer from '../../components/RadioPlayer.astro';
 import { MOODS } from '../../data/moods';
@@ -35,11 +36,20 @@ const otherMoods = MOODS.filter((m) => m.slug !== mood.slug);
     <p class="listen-eyebrow"><span aria-hidden="true">{mood.emoji}</span> Mood</p>
     <h1>{mood.heading}</h1>
     <p class="page-sub">{mood.intro}</p>
+    {mood.guides && (
+      <p class="listen-links">
+        {mood.guides.map((g) => <a class="link-arrow" href={g.href}>{g.label} →</a>)}
+      </p>
+    )}
   </section>
 
   <section class="container player-section">
     <RadioPlayer tags={mood.tag} scopeLabel={mood.title} />
   </section>
+
+  <div class="container">
+    <AdSlot type="native" />
+  </div>
 
   <section class="container">
     <div class="section-head">

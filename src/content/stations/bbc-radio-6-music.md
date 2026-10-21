@@ -27,7 +27,7 @@ The station targets music enthusiasts rather than a demographic defined by age, 
 
 ## Reach
 
-6 Music broadcasts across the United Kingdom on DAB digital radio and streams worldwide through BBC Sounds. It has no analogue FM or AM frequency, and its strong performance helped validate the BBC's investment in digital radio.
+6 Music broadcasts across the United Kingdom on DAB digital radio and streams on BBC Sounds in the UK. It has no analogue FM or AM frequency, and its strong performance helped validate the BBC's investment in digital radio.
 
 ## Significance
 
