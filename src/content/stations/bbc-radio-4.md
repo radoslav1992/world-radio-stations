@@ -10,7 +10,7 @@ website: "https://www.bbc.co.uk/radio4"
 language: "English"
 country: "United Kingdom"
 slogan: ""
-metaTitle: "BBC Radio 4 Frequency: 92–96 & 103–105 FM, DAB — Listen Live"
+metaTitle: "BBC Radio 4 Frequency: 92.5–96.1 FM & DAB — Listen Live"
 metaDescription: "BBC Radio 4 is on 92.5–96.1 and 103.5–104.9 FM across the UK, on DAB and on BBC Sounds. Long wave 198 kHz closed in June 2026. Listen live online here."
 playerSearch: "bbc radio 4"
 faq:

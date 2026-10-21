@@ -23,7 +23,7 @@ The station's core output is classical music, ranging from early music to contem
 
 ## Reach
 
-Radio 3 broadcasts across the United Kingdom on FM between 90.2 and 92.6 MHz and on DAB digital radio, and streams worldwide via BBC Sounds. While its audience is smaller than the BBC's mainstream networks, it serves a dedicated national listenership for classical music and the arts.
+Radio 3 broadcasts across the United Kingdom on FM between 90.2 and 92.6 MHz and on DAB digital radio, and streams on BBC Sounds in the UK. While its audience is smaller than the BBC's mainstream networks, it serves a dedicated national listenership for classical music and the arts.
 
 ## Significance
 

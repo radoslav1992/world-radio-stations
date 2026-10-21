@@ -26,7 +26,7 @@ Radio 1 targets a younger audience with a playlist centred on current chart hits
 
 ## Reach
 
-Radio 1 broadcasts nationally across the United Kingdom on FM and DAB digital radio, and streams worldwide through BBC Sounds.
+Radio 1 broadcasts nationally across the United Kingdom on FM and DAB digital radio, and streams on BBC Sounds in the UK.
 
 ## Significance
 
