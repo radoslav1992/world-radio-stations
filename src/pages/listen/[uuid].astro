@@ -14,24 +14,36 @@ const FETCH_HEADERS = { 'User-Agent': 'WorldRadioStations/1.0 (+https://worldrad
 const isPlayable = (s: any) => typeof s?.url_resolved === 'string' && s.url_resolved.startsWith('https://');
 
 let station: any = null;
+let lookupUnavailable = false;
 if (uuid && /^[a-fA-F0-9-]{8,64}$/.test(uuid)) {
   try {
-    const res = await fetch(`${API}/stations/byuuid/${encodeURIComponent(uuid)}`, { headers: FETCH_HEADERS });
+    const res = await fetch(`${API}/stations/byuuid/${encodeURIComponent(uuid)}`, {
+      headers: FETCH_HEADERS,
+      signal: AbortSignal.timeout(10_000),
+    });
     if (res.ok) {
       const list = await res.json();
-      const s = Array.isArray(list) ? list[0] : null;
-      if (isPlayable(s)) station = s;
+      // Only a valid directory response can establish that a station is gone.
+      // An outage, rate limit or malformed response must not become a 404.
+      if (!Array.isArray(list) || (list.length > 0 && typeof list[0]?.url_resolved !== 'string')) {
+        lookupUnavailable = true;
+      } else if (isPlayable(list[0])) {
+        station = list[0];
+      }
+    } else {
+      lookupUnavailable = true;
     }
   } catch {
-    station = null;
+    lookupUnavailable = true;
   }
 }
 
-// A real 404 (not a redirect to /404) so dead stations drop out of the index.
-if (!station) Astro.response.status = 404;
+// Preserve real 404s for missing stations, but ask crawlers to retry outages.
+if (!station) Astro.response.status = lookupUnavailable ? 503 : 404;
+if (lookupUnavailable) Astro.response.headers.set('Retry-After', '600');
 Astro.response.headers.set(
   'Cache-Control',
-  station ? 'public, max-age=300, s-maxage=3600' : 'public, max-age=60',
+  lookupUnavailable ? 'no-store' : station ? 'public, max-age=300, s-maxage=3600' : 'public, max-age=60',
 );
 
 const str = (v: unknown) => (typeof v === 'string' ? v.trim() : '');
@@ -107,10 +119,12 @@ const faqs = station
 
 const title = station
   ? `${name} Live — Listen Online Free${country ? ` | ${country} Radio` : ''}`
-  : 'Station not found — World Radio Stations';
+  : lookupUnavailable ? 'Station temporarily unavailable — World Radio Stations' : 'Station not found — World Radio Stations';
 const description = station
   ? `Listen to ${name} live online for free${genres.length ? ` — ${genres.slice(0, 3).join(', ')} radio` : ''}${place ? ` from ${placeIn}` : ''}. Streams in your browser, no app or sign-up needed.`
-  : 'This radio station is no longer available. Browse thousands of other live stations from around the world.';
+  : lookupUnavailable
+    ? 'The radio directory is temporarily unavailable. Please try this station again shortly.'
+    : 'This radio station is no longer available. Browse thousands of other live stations from around the world.';
 const ogImage = typeof station?.favicon === 'string' && station.favicon.startsWith('https://') ? station.favicon : '/og.png';
 
 const jsonLd = station
@@ -144,7 +158,7 @@ const jsonLd = station
   description={description}
   ogImage={ogImage}
   jsonLd={jsonLd}
-  noindex={!station}
+  noindex={!station && !lookupUnavailable}
   ads={Boolean(station)}
 >
   {station ? (
@@ -249,11 +263,12 @@ const jsonLd = station
   ) : (
     <section class="container not-found">
       <div class="not-found-inner">
-        <div class="not-found-code">404</div>
-        <h1>This station is off the air</h1>
+        <div class="not-found-code">{lookupUnavailable ? '503' : '404'}</div>
+        <h1>{lookupUnavailable ? 'Station temporarily unavailable' : 'This station is off the air'}</h1>
         <p>
-          We couldn’t find this radio station — it may have stopped streaming or been removed from the
-          directory. There are thousands of others to choose from.
+          {lookupUnavailable
+            ? 'We couldn’t reach the radio directory. Please try again shortly.'
+            : 'We couldn’t find this radio station — it may have stopped streaming or been removed from the directory. There are thousands of others to choose from.'}
         </p>
         <div class="hero-ctas">
           <a class="cta" href="/">Browse live stations</a>
