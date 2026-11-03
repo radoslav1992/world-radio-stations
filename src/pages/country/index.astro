@@ -34,6 +34,15 @@ if (!items.length) {
 
 Astro.response.headers.set('Cache-Control', 'public, max-age=300, s-maxage=1800');
 
+// Ads sit inside the country grid (up to 6 columns): a leaderboard pinned under
+// the first seven rows and the native unit about halfway down, after a multiple
+// of 60 countries so the row above it is full at 1 to 6 columns. The short
+// fallback list (API down) gets neither, only the leaderboard above the footer.
+const FIRST_AD_AFTER = 42;
+const showFirstAd = items.length >= 60;
+const midAdAfter = Math.max(120, Math.round(items.length / 120) * 60);
+const showMidAd = items.length - midAdAfter >= 30;
+
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'CollectionPage',
@@ -57,15 +66,17 @@ const jsonLd = {
     </div>
 
     <div class="facet-grid">
-      {items.map((c) => (
-        <a class="facet-card" href={`/country/${c.code.toLowerCase()}`}>
-          <span class="facet-name">{c.name}</span>
-          {c.count > 0 && <span class="facet-count">{c.count.toLocaleString('en')} stations</span>}
-        </a>
+      {items.map((c, i) => (
+        <Fragment>
+          {showFirstAd && i === FIRST_AD_AFTER && <AdSlot type="leaderboard" class="ad-in-grid ad-row-8" />}
+          {showMidAd && i === midAdAfter && <AdSlot type="native" class="ad-in-grid" />}
+          <a class="facet-card" href={`/country/${c.code.toLowerCase()}`}>
+            <span class="facet-name">{c.name}</span>
+            {c.count > 0 && <span class="facet-count">{c.count.toLocaleString('en')} stations</span>}
+          </a>
+        </Fragment>
       ))}
     </div>
-
-    <AdSlot type="native" />
 
     <p style="margin-top:2rem;"><a class="link-arrow" href="/moods">Discover by mood →</a></p>
   </section>

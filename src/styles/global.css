@@ -1871,6 +1871,13 @@ a.facet-card:hover {
 }
 .ad-footer { margin-block: 1rem 0; }
 .legal .ad, .listen-about .ad { margin-block: 2rem; }
+/* An ad inside a card grid takes a whole row. `ad-row-N` pins it to grid row N,
+   i.e. under N-1 full rows of cards whatever the column count, so it sits about
+   as far down on a phone as on a desktop. An empty native unit adds no gap. */
+.ad-in-grid { grid-column: 1 / -1; margin-block: 1rem; }
+.ad-in-grid.ad-native:not(.is-filled) { margin-block: 0; }
+.ad-row-3 { grid-row: 3; }
+.ad-row-8 { grid-row: 8; }
 
 /* 404 */
 .not-found { min-height: 60vh; display: flex; align-items: center; justify-content: center; padding-block: 4rem; }
