@@ -12,6 +12,13 @@ const countries = [...new Set(stations.map((s) => s.data.country).filter(Boolean
 
 const SITE_URL = 'https://worldradiostations.org';
 
+// Ads sit inside the directory grid (up to 3 columns): a leaderboard pinned
+// under the first two rows and the native unit about halfway down, after a
+// multiple of 6 cards so the row above it is full at 1, 2 or 3 columns.
+const FIRST_AD_AFTER = 6;
+const midAdAfter = Math.max(12, Math.round(stations.length / 12) * 6);
+const showMidAd = stations.length - midAdAfter >= 6;
+
 const jsonLd = [
   {
     '@context': 'https://schema.org',
@@ -58,21 +65,25 @@ const jsonLd = [
     </div>
 
     <div class="station-directory" data-station-list>
-      {stations.map((station) => (
-        <a href={`/stations/${station.slug}`} class="blog-card" data-country={station.data.country}>
-          <div class="blog-card-body">
-            <div class="blog-card-tags">
-              <span class="tag-chip">{station.data.format}</span>
-              <span class="tag-chip">{station.data.country}</span>
-              {station.data.founded && <span class="tag-chip">est. {station.data.founded}</span>}
+      {stations.map((station, i) => (
+        <Fragment>
+          {i === FIRST_AD_AFTER && <AdSlot type="leaderboard" class="ad-in-grid ad-row-3" />}
+          {showMidAd && i === midAdAfter && <AdSlot type="native" class="ad-in-grid" />}
+          <a href={`/stations/${station.slug}`} class="blog-card" data-country={station.data.country}>
+            <div class="blog-card-body">
+              <div class="blog-card-tags">
+                <span class="tag-chip">{station.data.format}</span>
+                <span class="tag-chip">{station.data.country}</span>
+                {station.data.founded && <span class="tag-chip">est. {station.data.founded}</span>}
+              </div>
+              <h2>{station.data.name}</h2>
+              <p>{station.data.description}</p>
+              {station.data.frequencies.length > 0 && (
+                <p class="station-freq">{station.data.frequencies.join(' · ')}</p>
+              )}
             </div>
-            <h2>{station.data.name}</h2>
-            <p>{station.data.description}</p>
-            {station.data.frequencies.length > 0 && (
-              <p class="station-freq">{station.data.frequencies.join(' · ')}</p>
-            )}
-          </div>
-        </a>
+          </a>
+        </Fragment>
       ))}
     </div>
 
@@ -81,8 +92,6 @@ const jsonLd = [
     <div class="station-pager">
       <button class="cta cta-secondary" data-station-more type="button" hidden>Load more</button>
     </div>
-
-    <AdSlot type="native" />
   </section>
 </Base>
 

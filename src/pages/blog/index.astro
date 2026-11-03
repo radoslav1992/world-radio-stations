@@ -7,6 +7,10 @@ import { getCollection } from 'astro:content';
 const posts = (await getCollection('blog'))
   .sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime());
 
+// The native unit sits inside the post grid, pinned under the first two rows
+// (see .ad-row-3), so it isn't stacked on the leaderboard above the footer.
+const AD_AFTER = 6;
+
 const getReadingTime = (body: string) => Math.max(1, Math.round((body || '').split(/\s+/).filter(Boolean).length / 200));
 
 const jsonLd = {
@@ -41,29 +45,30 @@ const jsonLd = {
     </div>
 
     <div class="blog-grid">
-      {posts.map((post) => (
-        <a href={`/blog/${post.slug}`} class="blog-card">
-          <div class="blog-card-body">
-            <div class="blog-card-tags">
-              {post.data.tags.map((tag) => (
-                <span class="tag-chip">{tag}</span>
-              ))}
+      {posts.map((post, i) => (
+        <Fragment>
+          {i === AD_AFTER && <AdSlot type="native" class="ad-in-grid ad-row-3" />}
+          <a href={`/blog/${post.slug}`} class="blog-card">
+            <div class="blog-card-body">
+              <div class="blog-card-tags">
+                {post.data.tags.map((tag) => (
+                  <span class="tag-chip">{tag}</span>
+                ))}
+              </div>
+              <h2>{post.data.title}</h2>
+              <p>{post.data.description}</p>
+              <time datetime={post.data.date}>
+                {new Date(post.data.date).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                })}
+              </time>
+              <span> · {getReadingTime(post.body)} min read</span>
             </div>
-            <h2>{post.data.title}</h2>
-            <p>{post.data.description}</p>
-            <time datetime={post.data.date}>
-              {new Date(post.data.date).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-              })}
-            </time>
-            <span> · {getReadingTime(post.body)} min read</span>
-          </div>
-        </a>
+          </a>
+        </Fragment>
       ))}
     </div>
-
-    <AdSlot type="native" />
   </section>
 </Base>
